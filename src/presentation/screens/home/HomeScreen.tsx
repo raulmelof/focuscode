@@ -1,24 +1,46 @@
 import React from 'react';
-import { View, Text, Button } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { AppNavigationProp } from '../../../types/navigation';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+
+import { PomodoroCircle } from '../../components/PomodoroCircle';
+import { TimerDisplay } from '../../components/TimerDisplay';
+import { PrimaryButton } from '../../components/PrimaryButton';
 import { styles } from './styles';
 
 export const HomeScreen = () => {
-  const navigation = useNavigation<AppNavigationProp>();
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Home Screen</Text>
-      <Text style={styles.subtext}>A pilha de navegação começa aqui.</Text>
-
-      <View style={{ marginTop: 20 }}>
-        <Button
-          title="Ir para Detalhes"
-          onPress={() => navigation.navigate('Details')}
-          color="#2A1128"
-        />
+    <SafeAreaView style={styles.safeArea}>
+      {/* Novo Cabeçalho: Menu Lateral + Título do App */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.menuButton} 
+          onPress={() => console.log('Abrir menu lateral')}
+        >
+          <Feather name="menu" size={32} color="#2A1128" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>FocusCode</Text>
       </View>
-    </View>
+
+      {/* Conteúdo Central */}
+      <View style={styles.container}>
+
+        {/* Pílula de Tarefa (Acima do Círculo) */}
+        <TouchableOpacity style={styles.taskPill} activeOpacity={0.7}>
+          <Text style={styles.taskPillText}>Nenhuma tarefa selecionada</Text>
+        </TouchableOpacity>
+
+        {/* Círculo com a Caneca */}
+        <PomodoroCircle />
+
+        {/* Relógio */}
+        <View style={styles.timerContainer}>
+          <TimerDisplay time="60:00" />
+        </View>
+
+        {/* Botão Principal */}
+        <PrimaryButton title="Iniciar Foco" onPress={() => console.log('Iniciou')} />
+      </View>
+    </SafeAreaView>
   );
 };
