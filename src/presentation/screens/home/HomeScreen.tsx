@@ -6,11 +6,22 @@ import { Feather } from '@expo/vector-icons';
 import { PomodoroCircle } from '../../components/PomodoroCircle';
 import { TimerDisplay } from '../../components/TimerDisplay';
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { TaskSelectionModal } from '../../components/TaskSelectionModal';
 import { styles } from './styles';
 import { useHomeViewModel } from './useHomeViewModel';
 
 export const HomeScreen = () => {
-  const { formattedTime, buttonTitle, toggleTimer, progress } = useHomeViewModel(); 
+  const { 
+    formattedTime, 
+    buttonTitle, 
+    toggleTimer, 
+    progress,
+    selectedTask,
+    isTaskModalVisible,
+    openTaskModal,
+    closeTaskModal,
+    selectTask 
+  } = useHomeViewModel(); 
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Novo Cabeçalho: Menu Lateral + Título do App */}
@@ -28,8 +39,15 @@ export const HomeScreen = () => {
       <View style={styles.container}>
 
         {/* Pílula de Tarefa (Acima do Círculo) */}
-        <TouchableOpacity style={styles.taskPill} activeOpacity={0.7}>
-          <Text style={styles.taskPillText}>Nenhuma tarefa selecionada</Text>
+        <TouchableOpacity 
+          style={styles.taskPill} 
+          activeOpacity={0.7} 
+          onPress={openTaskModal}
+          disabled={isTaskModalVisible}
+        >
+          <Text style={styles.taskPillText}>
+            {selectedTask ? selectedTask.title : 'Nenhuma tarefa selecionada'}
+          </Text>
         </TouchableOpacity>
 
         {/* Círculo com a Caneca */}
@@ -43,6 +61,12 @@ export const HomeScreen = () => {
         {/* Botão Principal */}
         <PrimaryButton title={buttonTitle} onPress={toggleTimer} />
       </View>
+
+      <TaskSelectionModal 
+        visible={isTaskModalVisible} 
+        onClose={closeTaskModal} 
+        onSelectTask={selectTask} 
+      />
     </SafeAreaView>
   );
 };
