@@ -10,7 +10,7 @@ import { styles } from './styles';
 import { useHomeViewModel } from './useHomeViewModel';
 
 export const HomeScreen = () => {
-  const { formattedTime, isRunning, buttonTitle, toggleTimer, progress } = useHomeViewModel();
+  const { formattedTime, buttonTitle, toggleTimer, progress } = useHomeViewModel(); 
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Novo Cabeçalho: Menu Lateral + Título do App */}

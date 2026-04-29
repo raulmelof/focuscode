@@ -29,6 +29,7 @@
     "@testing-library/react": "^16.2.0",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.1.0",
+    "babel-preset-expo": "^55.0.18",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~10.0.0",
     "jest": "^30.3.0",
