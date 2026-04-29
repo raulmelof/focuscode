@@ -7,8 +7,10 @@ import { PomodoroCircle } from '../../components/PomodoroCircle';
 import { TimerDisplay } from '../../components/TimerDisplay';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { styles } from './styles';
+import { useHomeViewModel } from './useHomeViewModel';
 
 export const HomeScreen = () => {
+  const { formattedTime, buttonTitle, toggleTimer, progress } = useHomeViewModel(); 
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Novo Cabeçalho: Menu Lateral + Título do App */}
@@ -31,15 +33,15 @@ export const HomeScreen = () => {
         </TouchableOpacity>
 
         {/* Círculo com a Caneca */}
-        <PomodoroCircle />
+        <PomodoroCircle progress={progress} />
 
         {/* Relógio */}
         <View style={styles.timerContainer}>
-          <TimerDisplay time="60:00" />
+          <TimerDisplay time={formattedTime} />
         </View>
 
         {/* Botão Principal */}
-        <PrimaryButton title="Iniciar Foco" onPress={() => console.log('Iniciou')} />
+        <PrimaryButton title={buttonTitle} onPress={toggleTimer} />
       </View>
     </SafeAreaView>
   );
