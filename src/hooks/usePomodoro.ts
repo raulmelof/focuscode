@@ -5,7 +5,7 @@ export const usePomodoro = (initialTimeInSeconds: number = 25 * 60) => {
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
