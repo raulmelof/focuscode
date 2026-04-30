@@ -14,13 +14,12 @@ export const useHomeViewModel = () => {
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
 
-
-  const pomodoro = usePomodoro({
+  // 1. Desestruturação direta do hook em uma única etapa
+  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
-    onFocusEnd: () => handleFocusEnd(),
+    onFocusEnd: () => handleFocusEnd(), 
   });
 
-  const { timeLeft, isRunning, start, pause, resetTimer } = pomodoro;
 
   const handleFocusEnd = useCallback(() => {
     if (selectedTask) {
