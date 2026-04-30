@@ -47,6 +47,11 @@ describe('usePomodoro', () => {
     });
 
     expect(result.current.timeLeft).toBe(0);
+    
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    
     expect(mockOnFocusEnd).toHaveBeenCalledTimes(1);
   });
 });

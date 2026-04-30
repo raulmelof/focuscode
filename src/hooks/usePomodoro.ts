@@ -12,22 +12,29 @@ export const usePomodoro = ({ initialTimeInSeconds, onFocusEnd }: UsePomodoroPro
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
+    let timeout: ReturnType<typeof setTimeout>;
 
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && isRunning) {
-      setIsRunning(false);
-      
-      if (onFocusEnd) {
-        onFocusEnd();
+    if (isRunning) {
+      if (timeLeft > 0) {
+        interval = setInterval(() => {
+          setTimeLeft((prev) => prev - 1);
+        }, 1000);
+      } else if (timeLeft === 0) {
+        timeout = setTimeout(() => {
+          setIsRunning(false);
+          if (onFocusEnd) {
+            onFocusEnd();
+          }
+        }, 1000);
       }
     }
 
     return () => {
       if (interval) {
         clearInterval(interval);
+      }
+      if (timeout) {
+        clearTimeout(timeout);
       }
     };
   }, [isRunning, timeLeft, onFocusEnd]);

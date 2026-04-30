@@ -1,5 +1,12 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react-native';
 import { useHomeViewModel } from '../useHomeViewModel';
+
+const mockNavigate = jest.fn();
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({
+    navigate: mockNavigate,
+  }),
+}));
 
 jest.useFakeTimers();
 

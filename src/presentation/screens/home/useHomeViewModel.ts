@@ -8,7 +8,7 @@ import { Task } from '../../../utils/mockTasks';
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   
-  const INITIAL_TIME = 3; 
+  const INITIAL_TIME = 1 * 60; 
 
   const handleFocusEnd = useCallback(() => {
     navigation.navigate('BreakScreen');

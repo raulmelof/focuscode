@@ -45,8 +45,13 @@ describe('useBreakViewModel', () => {
     renderHook(() => useBreakViewModel());
 
     act(() => {
-      // Magia do Jest: Avançamos o relógio do sistema em 30.000 milissegundos (30s) instantaneamente!
+      // Avançamos 30s
       jest.advanceTimersByTime(30000); 
+    });
+
+    act(() => {
+      // + 1s do delay visual do cronômetro final
+      jest.advanceTimersByTime(1000); 
     });
 
     // Como o tempo acabou, o gatilho onFocusEnd tem que ter disparado a navegação
