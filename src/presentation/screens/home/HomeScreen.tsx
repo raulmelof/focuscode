@@ -20,7 +20,9 @@ export const HomeScreen = () => {
     isTaskModalVisible,
     openTaskModal,
     closeTaskModal,
-    selectTask 
+    selectTask,
+    tasks,
+    openCreateTaskModal
   } = useHomeViewModel(); 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -65,8 +67,11 @@ export const HomeScreen = () => {
       <TaskSelectionModal 
         visible={isTaskModalVisible} 
         onClose={closeTaskModal} 
-        onSelectTask={selectTask} 
+        onSelectTask={selectTask}
+        tasks={tasks}
+        onCreateTask={openCreateTaskModal}
       />
+
     </SafeAreaView>
   );
 };
