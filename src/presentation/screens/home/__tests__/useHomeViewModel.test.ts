@@ -59,4 +59,36 @@ describe('useHomeViewModel', () => {
 
     expect(result.current.selectedTask).toEqual(mockTask);
   });
+
+  it('should manage create task modal visibility', () => {
+    const { result } = renderHook(() => useHomeViewModel());
+    
+    expect(result.current.isCreateTaskModalVisible).toBe(false);
+
+    act(() => {
+      result.current.openCreateTaskModal();
+    });
+    expect(result.current.isCreateTaskModalVisible).toBe(true);
+
+    act(() => {
+      result.current.closeCreateTaskModal();
+    });
+    expect(result.current.isCreateTaskModalVisible).toBe(false);
+  });
+
+  it('should add a new task and close the create modal', () => {
+    const { result } = renderHook(() => useHomeViewModel());
+    const initialTasksCount = result.current.tasks.length;
+
+    act(() => {
+      result.current.openCreateTaskModal();
+      result.current.addTask('Nova Tarefa Teste', 'Tag Teste');
+    });
+
+    expect(result.current.tasks.length).toBe(initialTasksCount + 1);
+    expect(result.current.tasks[initialTasksCount].title).toBe('Nova Tarefa Teste');
+    expect(result.current.tasks[initialTasksCount].tag).toBe('Tag Teste');
+    
+    expect(result.current.isCreateTaskModalVisible).toBe(false);
+  });
 });
