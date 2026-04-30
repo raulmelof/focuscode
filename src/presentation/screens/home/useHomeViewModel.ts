@@ -7,19 +7,20 @@ import { Task } from '../../../utils/mockTasks';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  
   const INITIAL_TIME = 1 * 60; 
 
-  const handleFocusEnd = useCallback(() => {
-    navigation.navigate('BreakScreen');
-    resetTimer(); 
-  }, [navigation]);
 
   const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
-    onFocusEnd: handleFocusEnd,
+    onFocusEnd: () => handleFocusEnd(), 
   });
+
   
+  const handleFocusEnd = useCallback(() => {
+    navigation.navigate('BreakScreen');
+    resetTimer(); 
+  }, [navigation, resetTimer]); 
+
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
 
