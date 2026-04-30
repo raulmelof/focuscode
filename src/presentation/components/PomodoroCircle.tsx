@@ -3,9 +3,10 @@ import { View, StyleSheet, Image, useWindowDimensions, Animated, Easing } from '
 
 interface PomodoroCircleProps {
   progress?: number;
+  showImage?: boolean; 
 }
 
-export const PomodoroCircle = ({ progress = 0 }: PomodoroCircleProps) => {
+export const PomodoroCircle = ({ progress = 0, showImage = true }: PomodoroCircleProps) => {
   const { width } = useWindowDimensions();
   const circleSize = width * 0.7; 
 
@@ -27,15 +28,17 @@ export const PomodoroCircle = ({ progress = 0 }: PomodoroCircleProps) => {
 
   return (
     <View style={[styles.container, { width: circleSize, height: circleSize }]}>
-      {/* Círculo estático com a imagem */}
       <View style={[styles.circle, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}>
-        <Image
-          source={require('../../assets/cafe_vazio.png')}
-          style={styles.image}
-        />
+        
+        {showImage && (
+          <Image
+            source={require('../../assets/cafe_vazio.png')}
+            style={styles.image}
+          />
+        )}
+
       </View>
 
-      {/* Bolinha animada rodando na borda */}
       <Animated.View style={[styles.spinnerContainer, { width: circleSize, height: circleSize, transform: [{ rotate: spin }] }]}>
         <View style={styles.spinnerBall} />
       </Animated.View>

@@ -1,18 +1,36 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { AppNavigationProp } from '../../../types/navigation'; 
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
-import { MOCK_TASKS, Task } from '../../../utils/mockTasks';
+import { Task, MOCK_TASKS } from '../../../utils/mockTasks'; 
 
 export const useHomeViewModel = () => {
-  const INITIAL_TIME = 1 * 60; // Deixei 1 minuto para testes, so mudar o 1 pra 60 pra ficar 1h
-  const { timeLeft, isRunning, start, pause } = usePomodoro(INITIAL_TIME);
-  
+  const navigation = useNavigation<AppNavigationProp>();
+  const INITIAL_TIME = 1 * 60; 
+
   const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS);
-  
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
+
+  // 1. Desestruturação direta do hook em uma única etapa
+  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
+    initialTimeInSeconds: INITIAL_TIME,
+    onFocusEnd: () => handleFocusEnd(), 
+  });
+
+
+  const handleFocusEnd = useCallback(() => {
+    if (selectedTask) {
+      setTasks(prevTasks => 
+        prevTasks.map(t => t.id === selectedTask.id ? { ...t, completed: true } : t)
+      );
+    }
+    
+    navigation.navigate('BreakScreen');
+    resetTimer(); 
+  }, [navigation, resetTimer, selectedTask]);
 
   const toggleTimer = () => {
     if (isRunning) {
@@ -24,20 +42,24 @@ export const useHomeViewModel = () => {
 
   const openTaskModal = () => setIsTaskModalVisible(true);
   const closeTaskModal = () => setIsTaskModalVisible(false);
+  
   const selectTask = (task: Task) => {
     setSelectedTask(task);
+    closeTaskModal();
   };
 
   const openCreateTaskModal = () => setIsCreateTaskModalVisible(true);
   const closeCreateTaskModal = () => setIsCreateTaskModalVisible(false);
 
   const addTask = (title: string, tag: string) => {
-    const newTask: Task = {
-      id: Date.now(),
-      title,
-      tag,
-    };
-    setTasks([...tasks, newTask]);
+    setTasks(prevTasks => [
+      ...prevTasks,
+      {
+        id: prevTasks.length ? Math.max(...prevTasks.map(task => task.id)) + 1 : 1,
+        title,
+        tag,
+      },
+    ]);
     closeCreateTaskModal();
   };
 
@@ -52,6 +74,7 @@ export const useHomeViewModel = () => {
     toggleTimer,
     progress,
     tasks,
+    setTasks,
     selectedTask,
     isTaskModalVisible,
     openTaskModal,
