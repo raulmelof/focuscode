@@ -1,15 +1,17 @@
 import React, { useRef } from 'react';
 import { Modal, View, Text, TouchableOpacity, FlatList, StyleSheet, Animated, PanResponder } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { MOCK_TASKS, Task } from '../../utils/mockTasks';
+import { Task } from '../../utils/mockTasks';
 
 interface TaskSelectionModalProps {
   visible: boolean;
   onClose: () => void;
   onSelectTask: (task: Task) => void;
+  tasks: Task[];
+  onCreateTask: () => void;
 }
 
-export const TaskSelectionModal = ({ visible, onClose, onSelectTask }: TaskSelectionModalProps) => {
+export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, onCreateTask }: TaskSelectionModalProps) => {
   const panY = useRef(new Animated.Value(0)).current;
 
   const panResponder = useRef(
@@ -82,14 +84,20 @@ export const TaskSelectionModal = ({ visible, onClose, onSelectTask }: TaskSelec
           </View>
 
           <FlatList
-            data={MOCK_TASKS}
+            data={tasks}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
           />
 
-          <TouchableOpacity style={styles.createButton}>
+          <TouchableOpacity 
+            style={styles.createButton}
+            onPress={() => {
+              onClose();
+              setTimeout(onCreateTask, 300);
+            }}
+          >
             <Feather name="plus" size={20} color="#FFFFFF" />
             <Text style={styles.createButtonText}>Criar nova tarefa</Text>
           </TouchableOpacity>

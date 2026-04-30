@@ -3,25 +3,26 @@ import { useNavigation } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation'; 
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
-import { Task, MOCK_TASKS } from '../../../utils/mockTasks'; // Importei mockTasks aqui
+import { Task, MOCK_TASKS } from '../../../utils/mockTasks'; 
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const INITIAL_TIME = 1 * 60; 
 
-  // --- ESTADOS ---
-  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS); // Declarando o estado das tarefas
+  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
+  const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
 
-  // --- LOGICA DO POMODORO ---
-  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
+
+  const pomodoro = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
-    onFocusEnd: () => handleFocusEnd(), 
+    onFocusEnd: () => handleFocusEnd(),
   });
 
+  const { timeLeft, isRunning, start, pause, resetTimer } = pomodoro;
+
   const handleFocusEnd = useCallback(() => {
-    // Exemplo: Marcar a tarefa atual como concluída se houver uma selecionada
     if (selectedTask) {
       setTasks(prevTasks => 
         prevTasks.map(t => t.id === selectedTask.id ? { ...t, completed: true } : t)
@@ -30,9 +31,8 @@ export const useHomeViewModel = () => {
     
     navigation.navigate('BreakScreen');
     resetTimer(); 
-  }, [navigation, resetTimer, selectedTask]); // Adicionada dependência do selectedTask
+  }, [navigation, resetTimer, selectedTask]);
 
-  // --- AÇÕES ---
   const toggleTimer = () => {
     if (isRunning) {
       pause();
@@ -49,23 +49,41 @@ export const useHomeViewModel = () => {
     closeTaskModal();
   };
 
+  const openCreateTaskModal = () => setIsCreateTaskModalVisible(true);
+  const closeCreateTaskModal = () => setIsCreateTaskModalVisible(false);
+
+  const addTask = (title: string, tag: string) => {
+    setTasks(prevTasks => [
+      ...prevTasks,
+      {
+        id: prevTasks.length ? Math.max(...prevTasks.map(task => task.id)) + 1 : 1,
+        title,
+        tag,
+      },
+    ]);
+    closeCreateTaskModal();
+  };
+
   const formattedTime = formatTime(timeLeft);
   const buttonTitle = isRunning ? "PAUSAR FOCO" : "INICIAR FOCO";
   const progress = 1 - (timeLeft / INITIAL_TIME);
 
-  // --- RETORNO ---
   return {
     formattedTime,
     isRunning,
     buttonTitle,
     toggleTimer,
     progress,
-    tasks,         // Agora o TS encontra 'tasks'
-    setTasks,      // Agora o TS encontra 'setTasks'
+    tasks,
+    setTasks,
     selectedTask,
     isTaskModalVisible,
     openTaskModal,
     closeTaskModal,
     selectTask,
+    isCreateTaskModalVisible,
+    openCreateTaskModal,
+    closeCreateTaskModal,
+    addTask,
   };
 };

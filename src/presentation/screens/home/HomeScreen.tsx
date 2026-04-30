@@ -7,6 +7,7 @@ import { PomodoroCircle } from '../../components/PomodoroCircle';
 import { TimerDisplay } from '../../components/TimerDisplay';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { TaskSelectionModal } from '../../components/TaskSelectionModal';
+import { CreateTaskModal } from '../../components/CreateTaskModal';
 import { styles } from './styles';
 import { useHomeViewModel } from './useHomeViewModel';
 
@@ -20,7 +21,12 @@ export const HomeScreen = () => {
     isTaskModalVisible,
     openTaskModal,
     closeTaskModal,
-    selectTask 
+    selectTask,
+    tasks,
+    isCreateTaskModalVisible,
+    openCreateTaskModal,
+    closeCreateTaskModal,
+    addTask
   } = useHomeViewModel(); 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -65,8 +71,17 @@ export const HomeScreen = () => {
       <TaskSelectionModal 
         visible={isTaskModalVisible} 
         onClose={closeTaskModal} 
-        onSelectTask={selectTask} 
+        onSelectTask={selectTask}
+        tasks={tasks}
+        onCreateTask={openCreateTaskModal}
       />
+
+      <CreateTaskModal
+        visible={isCreateTaskModalVisible}
+        onClose={closeCreateTaskModal}
+        onSave={addTask}
+      />
+
     </SafeAreaView>
   );
 };
