@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
@@ -26,7 +26,9 @@ export const HomeScreen = () => {
     isCreateTaskModalVisible,
     openCreateTaskModal,
     closeCreateTaskModal,
-    addTask
+    addTask,
+    isFlipEnabled,
+    setIsFlipEnabled
   } = useHomeViewModel(); 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -39,6 +41,16 @@ export const HomeScreen = () => {
           <Feather name="menu" size={32} color="#2A1128" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>FocusCode</Text>
+        {Platform.OS !== 'web' && (
+          <View style={styles.headerRight}>
+            <Switch
+              value={isFlipEnabled}
+              onValueChange={setIsFlipEnabled}
+              trackColor={{ false: '#767577', true: '#2A1128' }}
+              thumbColor={isFlipEnabled ? '#E6D5A7' : '#f4f3f4'}
+            />
+          </View>
+        )}
       </View>
 
       {/* Conteúdo Central */}
