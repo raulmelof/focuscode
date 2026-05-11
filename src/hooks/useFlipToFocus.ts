@@ -25,7 +25,7 @@ export const useFlipToFocus = (
   useEffect(() => {
     if (!isActive) return;
 
-    let subscription: any = null;
+    let subscription: ReturnType<typeof Accelerometer.addListener> | null = null;
 
     Accelerometer.setUpdateInterval(500);
 
@@ -33,16 +33,13 @@ export const useFlipToFocus = (
       const isFaceDown = Math.abs(x) < 0.3 && Math.abs(y) < 0.3 && z > 0.8;
 
       if (!isRunning) {
-        // If the timer is NOT running, and we place it face down, it starts.
         if (isFaceDown && lastActionRef.current !== 'start') {
           lastActionRef.current = 'start';
           onStart();
         }
       } else {
-        // If the timer IS running
         if (!isFaceDown) {
-          // It's not face down. Check if grace period expired.
-          if (runningSince && Date.now() - runningSince > 10000) {
+          if (runningSince && Date.now() - runningSince > 5000) { //tempo de 5 segundos para posicionar o celular
             if (lastActionRef.current !== 'pause') {
               lastActionRef.current = 'pause';
               onPause();
