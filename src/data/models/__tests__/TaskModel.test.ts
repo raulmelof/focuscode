@@ -38,7 +38,8 @@ describe('TaskModel', () => {
   it('should get all tasks and map them correctly', async () => {
     mockGetAllAsync.mockResolvedValueOnce([
       { id: 1, title: 'Task 1', description: null, isCompleted: 0, tagId: null },
-      { id: 2, title: 'Task 2', description: 'Desc', isCompleted: 1, tagId: 2 }
+      { id: 2, title: 'Task 2', description: 'Desc', isCompleted: 1, tagId: 2 },
+      { id: 3, title: 'Task 3', description: '', isCompleted: 0, tagId: 0 }
     ]);
     
     const tasks = await TaskModel.getTasks();
@@ -53,6 +54,10 @@ describe('TaskModel', () => {
     expect(tasks[1].isCompleted).toBe(true);
     expect(tasks[1].description).toBe('Desc');
     expect(tasks[1].tagId).toBe(2);
+
+    expect(tasks[2].isCompleted).toBe(false);
+    expect(tasks[2].description).toBe('');
+    expect(tasks[2].tagId).toBe(0);
   });
 
   it('should update task status', async () => {

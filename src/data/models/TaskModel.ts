@@ -6,7 +6,7 @@ export class TaskModel {
     const db = await getDBConnection();
     const result = await db.runAsync(
       'INSERT INTO tasks (title, description, isCompleted, tagId) VALUES (?, ?, ?, ?)',
-      [title, description || null, 0, tagId || null]
+      [title, description ?? null, 0, tagId ?? null]
     );
     return result.lastInsertRowId;
   }
@@ -15,12 +15,12 @@ export class TaskModel {
     const db = await getDBConnection();
     const allRows = await db.getAllAsync<{ id: number; title: string; description: string | null; isCompleted: number; tagId: number | null }>('SELECT * FROM tasks');
     
-    return allRows.map(row => ({
+    return allRows.map((row: { id: number; title: string; description: string | null; isCompleted: number; tagId: number | null }) => ({
       id: row.id,
       title: row.title,
-      description: row.description || undefined,
+      description: row.description ?? undefined,
       isCompleted: row.isCompleted === 1,
-      tagId: row.tagId || undefined
+      tagId: row.tagId ?? undefined
     }));
   }
 
