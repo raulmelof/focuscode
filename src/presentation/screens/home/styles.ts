@@ -12,6 +12,11 @@ export const styles = StyleSheet.create({
     paddingTop: 16,
     minHeight: 60,
   },
+  headerRight: {
+    position: 'absolute',
+    right: 24,
+    zIndex: 1,
+  },
   menuButton: {
     position: 'absolute',
     left: 24,

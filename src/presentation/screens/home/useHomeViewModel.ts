@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
+import { Alert, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation'; 
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
 import { Task, MOCK_TASKS } from '../../../utils/mockTasks'; 
+import { useFlipToFocus } from '../../../hooks/useFlipToFocus';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -13,12 +15,22 @@ export const useHomeViewModel = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
+  const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
 
   // 1. Desestruturação direta do hook em uma única etapa
   const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
     onFocusEnd: () => handleFocusEnd(), 
   });
+
+  // Sensores para ativar função quando celular é virado de cabeça para baixo ou pausar quando movido
+  
+  const handlePauseFromSensor = useCallback(() => {
+    pause();
+    Alert.alert('Foco Pausado', 'Você moveu o celular! O aparelho deve ficar com a tela virada para baixo.');
+  }, [pause]);
+
+  useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
 
 
   const handleFocusEnd = useCallback(() => {
@@ -84,5 +96,7 @@ export const useHomeViewModel = () => {
     openCreateTaskModal,
     closeCreateTaskModal,
     addTask,
+    isFlipEnabled,
+    setIsFlipEnabled,
   };
 };

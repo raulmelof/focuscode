@@ -8,6 +8,14 @@ jest.mock('@react-navigation/native', () => ({
   }),
 }));
 
+jest.mock('expo-sensors', () => ({
+  Accelerometer: {
+    setUpdateInterval: jest.fn(),
+    addListener: jest.fn(() => ({ remove: jest.fn() })),
+    removeAllListeners: jest.fn(),
+  },
+}));
+
 jest.useFakeTimers();
 
 describe('useHomeViewModel', () => {
