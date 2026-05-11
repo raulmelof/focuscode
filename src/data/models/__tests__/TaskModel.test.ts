@@ -1,5 +1,4 @@
 import { TaskModel } from '../TaskModel';
-import * as SQLite from 'expo-sqlite';
 
 const mockRunAsync = jest.fn();
 const mockGetAllAsync = jest.fn();

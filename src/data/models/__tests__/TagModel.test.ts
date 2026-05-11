@@ -1,5 +1,4 @@
 import { TagModel } from '../TagModel';
-import * as SQLite from 'expo-sqlite';
 
 const mockRunAsync = jest.fn();
 const mockGetAllAsync = jest.fn();
