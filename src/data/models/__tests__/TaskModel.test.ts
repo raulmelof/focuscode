@@ -43,8 +43,8 @@ describe('TaskModel', () => {
     ]);
     
     const tasks = await TaskModel.getTasks();
-    expect(mockGetAllAsync).toHaveBeenCalledWith('SELECT * FROM tasks');
-    expect(tasks).toHaveLength(2);
+    expect(mockGetAllAsync).toHaveBeenCalledWith('SELECT * FROM tasks WHERE isDeleted = 0');
+    expect(tasks).toHaveLength(3);
     
     // Mapping assertions
     expect(tasks[0].isCompleted).toBe(false);
@@ -61,24 +61,32 @@ describe('TaskModel', () => {
   });
 
   it('should update task status', async () => {
+    const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+    
     await TaskModel.updateTaskStatus(1, true);
     expect(mockRunAsync).toHaveBeenCalledWith(
-      'UPDATE tasks SET isCompleted = ? WHERE id = ?',
-      [1, 1] // true becomes 1
+      'UPDATE tasks SET isCompleted = ?, updatedAt = ? WHERE id = ?',
+      [1, 1234567890, 1] // true becomes 1
     );
 
     await TaskModel.updateTaskStatus(2, false);
     expect(mockRunAsync).toHaveBeenCalledWith(
-      'UPDATE tasks SET isCompleted = ? WHERE id = ?',
-      [0, 2] // false becomes 0
+      'UPDATE tasks SET isCompleted = ?, updatedAt = ? WHERE id = ?',
+      [0, 1234567890, 2] // false becomes 0
     );
+
+    mockDateNow.mockRestore();
   });
 
   it('should delete a task', async () => {
+    const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+    
     await TaskModel.deleteTask(5);
     expect(mockRunAsync).toHaveBeenCalledWith(
-      'DELETE FROM tasks WHERE id = ?',
-      [5]
+      'UPDATE tasks SET isDeleted = 1, updatedAt = ? WHERE id = ?',
+      [1234567890, 5]
     );
+
+    mockDateNow.mockRestore();
   });
 });

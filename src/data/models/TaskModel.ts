@@ -13,9 +13,10 @@ export class TaskModel {
 
   static async getTasks(): Promise<Task[]> {
     const db = await getDBConnection();
-    const allRows = await db.getAllAsync<{ id: number; title: string; description: string | null; isCompleted: number; tagId: number | null }>('SELECT * FROM tasks');
+    // Apenas busca tarefas que não estão marcadas como deletadas
+    const allRows = await db.getAllAsync<{ id: number; title: string; description: string | null; isCompleted: number; tagId: number | null }>('SELECT * FROM tasks WHERE isDeleted = 0');
     
-    return allRows.map((row: { id: number; title: string; description: string | null; isCompleted: number; tagId: number | null }) => ({
+    return allRows.map((row) => ({
       id: row.id,
       title: row.title,
       description: row.description ?? undefined,
@@ -26,11 +27,14 @@ export class TaskModel {
 
   static async updateTaskStatus(id: number, isCompleted: boolean): Promise<void> {
     const db = await getDBConnection();
-    await db.runAsync('UPDATE tasks SET isCompleted = ? WHERE id = ?', [isCompleted ? 1 : 0, id]);
+    const now = Date.now();
+    await db.runAsync('UPDATE tasks SET isCompleted = ?, updatedAt = ? WHERE id = ?', [isCompleted ? 1 : 0, now, id]);
   }
 
   static async deleteTask(id: number): Promise<void> {
     const db = await getDBConnection();
-    await db.runAsync('DELETE FROM tasks WHERE id = ?', [id]);
+    const now = Date.now();
+    // Soft delete: marca como deletado para o SyncService apagar no Firebase depois
+    await db.runAsync('UPDATE tasks SET isDeleted = 1, updatedAt = ? WHERE id = ?', [now, id]);
   }
 }

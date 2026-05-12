@@ -5,13 +5,20 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppStack } from './src/presentation/routes/AppStack';
 import { initDB } from './src/data/database/database';
+import './src/services/firebase'; // Inicializa Firebase
+import { SyncService } from './src/services/SyncService';
 
 export default function App() {
   const [isDBReady, setIsDBReady] = useState(false);
 
   useEffect(() => {
     initDB()
-      .then(() => setIsDBReady(true))
+      .then(async () => {
+        setIsDBReady(true);
+        
+        // Roda a sincronização em background sem bloquear a UI
+        SyncService.sync().catch(console.error);
+      })
       .catch(console.error);
   }, []);
 
