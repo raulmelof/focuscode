@@ -13,12 +13,15 @@ export class TagModel {
 
   static async getTags(): Promise<Tag[]> {
     const db = await getDBConnection();
-    const allRows = await db.getAllAsync<Tag>('SELECT * FROM tags');
+    // Apenas busca tags que não estão marcadas como deletadas
+    const allRows = await db.getAllAsync<Tag>('SELECT * FROM tags WHERE isDeleted = 0');
     return allRows;
   }
 
   static async deleteTag(id: number): Promise<void> {
     const db = await getDBConnection();
-    await db.runAsync('DELETE FROM tags WHERE id = ?', [id]);
+    const now = Date.now();
+    // Soft delete para sincronização futura
+    await db.runAsync('UPDATE tags SET isDeleted = 1, updatedAt = ? WHERE id = ?', [now, id]);
   }
 }

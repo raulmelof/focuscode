@@ -30,16 +30,20 @@ describe('TagModel', () => {
       { id: 1, name: 'Study', color: '#FF0000' }
     ]);
     const tags = await TagModel.getTags();
-    expect(mockGetAllAsync).toHaveBeenCalledWith('SELECT * FROM tags');
+    expect(mockGetAllAsync).toHaveBeenCalledWith('SELECT * FROM tags WHERE isDeleted = 0');
     expect(tags).toHaveLength(1);
     expect(tags[0].name).toBe('Study');
   });
 
   it('should delete a tag', async () => {
+    const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+    
     await TagModel.deleteTag(1);
     expect(mockRunAsync).toHaveBeenCalledWith(
-      'DELETE FROM tags WHERE id = ?',
-      [1]
+      'UPDATE tags SET isDeleted = 1, updatedAt = ? WHERE id = ?',
+      [1234567890, 1]
     );
+
+    mockDateNow.mockRestore();
   });
 });
