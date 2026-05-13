@@ -7,6 +7,7 @@ import { AppStack } from './src/presentation/routes/AppStack';
 import { initDB } from './src/data/database/database';
 import './src/services/firebase'; // Inicializa Firebase
 import { SyncService } from './src/services/SyncService';
+import { AuthProvider } from './src/contexts/AuthContext';
 
 export default function App() {
   const [isDBReady, setIsDBReady] = useState(false);
@@ -32,10 +33,12 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        {/* Toda a lógica de Stack.Navigator e Stack.Screen está guardada aqui dentro */}
-        <AppStack />
-      </NavigationContainer>
+      <AuthProvider>
+        <NavigationContainer>
+          {/* Toda a lógica de Stack.Navigator e Stack.Screen está guardada aqui dentro */}
+          <AppStack />
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
