@@ -13,20 +13,26 @@ export default function App() {
   const [isDBReady, setIsDBReady] = useState(false);
 
   useEffect(() => {
+    console.log('App.tsx: Iniciando initDB()');
     initDB()
       .then(async () => {
+        console.log('App.tsx: initDB() concluído com sucesso');
         setIsDBReady(true);
         
         // Roda a sincronização em background sem bloquear a UI
-        SyncService.sync().catch(console.error);
+        SyncService.sync().catch(err => console.error('App.tsx: Erro no SyncService:', err));
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error('App.tsx: Erro no initDB():', err);
+        // Libera a interface mesmo se o banco falhar (ex: Web com erro de SecurityError do OPFS)
+        setIsDBReady(true); 
+      });
   }, []);
 
   if (!isDBReady) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121214' }}>
+        <ActivityIndicator size="large" color="#04d361" />
       </View>
     );
   }

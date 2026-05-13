@@ -11,10 +11,12 @@ export const initDB = async () => {
     return initPromise;
   }
 
+  console.log('database.ts: Iniciando initDB promise');
   initPromise = (async () => {
     try {
+      console.log('database.ts: Chamando getDBConnection()');
       const db = await getDBConnection();
-
+      console.log('database.ts: Conexão DB obtida. Executando PRAGMA...');
       await db.execAsync(`
         PRAGMA journal_mode = WAL;
         
