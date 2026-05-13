@@ -32,8 +32,9 @@ export const signUp = async (email: string, password: string): Promise<AuthRespo
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     return { success: true, user: userCredential.user };
-  } catch (error: any) {
-    const errorMessage = mapFirebaseError(error.code);
+  } catch (error: unknown) {
+    const err = error as { code?: string };
+    const errorMessage = mapFirebaseError(err.code || '');
     return { success: false, error: errorMessage };
   }
 };
@@ -42,8 +43,9 @@ export const signIn = async (email: string, password: string): Promise<AuthRespo
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return { success: true, user: userCredential.user };
-  } catch (error: any) {
-    const errorMessage = mapFirebaseError(error.code);
+  } catch (error: unknown) {
+    const err = error as { code?: string };
+    const errorMessage = mapFirebaseError(err.code || '');
     return { success: false, error: errorMessage };
   }
 };
@@ -52,7 +54,7 @@ export const signOut = async (): Promise<AuthResponse> => {
   try {
     await firebaseSignOut(auth);
     return { success: true };
-  } catch (error: any) {
+  } catch {
     return { success: false, error: 'Erro ao sair da conta.' };
   }
 };
