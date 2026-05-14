@@ -85,7 +85,20 @@ export const ManageTagsModal = ({
     }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Tem certeza que deseja excluir esta tag?');
+      if (confirmed) {
+        try {
+          await onDeleteTag(id);
+          if (editingTagId === id) resetForm();
+        } catch (error) {
+          console.error('Erro ao excluir tag:', error);
+        }
+      }
+      return;
+    }
+
     Alert.alert(
       'Excluir Tag',
       'Tem certeza que deseja excluir esta tag? As tarefas associadas poderão ficar sem categoria.',

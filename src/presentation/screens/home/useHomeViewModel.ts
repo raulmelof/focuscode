@@ -13,122 +13,123 @@ import { useFlipToFocus } from '../../../hooks/useFlipToFocus';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const INITIAL_TIME = 1 * 60; 
+  const INITIAL_TIME = 1 * 60; // 1 minuto para testes
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
   const [isManageTagsModalVisible, setIsManageTagsModalVisible] = useState(false);
   const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       await initDB();
-      const dbTasks = await TaskModel.getTasks();
-      const dbTags = await TagModel.getTags();
+      const [dbTasks, dbTags] = await Promise.all([
+        TaskModel.getTasks(),
+        TagModel.getTags()
+      ]);
       
       setTasks(dbTasks.filter(t => !t.isCompleted));
       setTags(dbTags);
     } catch (error) {
-      console.error('Erro ao carregar dados do banco:', error);
+      console.error('[ViewModel] Erro ao carregar dados:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []);
-
-  // 1. Desestruturação direta do hook em uma única etapa
-  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
-    initialTimeInSeconds: INITIAL_TIME,
-    onFocusEnd: () => handleFocusEnd(), 
-  });
-
-  // Sensores para ativar função quando celular é virado de cabeça para baixo ou pausar quando movido
-  
-  const handlePauseFromSensor = useCallback(() => {
-    pause();
-    Alert.alert('Foco Pausado', 'Você moveu o celular! O aparelho deve ficar com a tela virada para baixo.');
-  }, [pause]);
-
-  useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
-
+  }, [loadData]);
 
   const handleFocusEnd = useCallback(async () => {
     if (selectedTask) {
       try {
         await TaskModel.updateTaskStatus(selectedTask.id, true);
-        setTasks(prevTasks => prevTasks.filter(t => t.id !== selectedTask.id));
+        setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
         setSelectedTask(null);
       } catch (error) {
-        console.error('Erro ao atualizar status da tarefa:', error);
+        console.error('[ViewModel] Erro ao concluir tarefa:', error);
       }
     }
-    
     navigation.navigate('BreakScreen');
     resetTimer(); 
-  }, [navigation, resetTimer, selectedTask]);
+  }, [navigation, selectedTask]);
 
-  const toggleTimer = () => {
-    if (isRunning) {
-      pause();
-    } else {
-      start();
-    }
-  };
+  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
+    initialTimeInSeconds: INITIAL_TIME,
+    onFocusEnd: handleFocusEnd, 
+  });
 
-  const openTaskModal = () => setIsTaskModalVisible(true);
-  const closeTaskModal = () => setIsTaskModalVisible(false);
+  const handlePauseFromSensor = useCallback(() => {
+    pause();
+    Alert.alert('Foco Pausado', 'O aparelho deve ficar com a tela virada para baixo.');
+  }, [pause]);
+
+  useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
+
+  const toggleTimer = useCallback(() => {
+    isRunning ? pause() : start();
+  }, [isRunning, pause, start]);
+
+  const openTaskModal = useCallback(() => setIsTaskModalVisible(true), []);
+  const closeTaskModal = useCallback(() => setIsTaskModalVisible(false), []);
   
-  const selectTask = (task: Task) => {
+  const selectTask = useCallback((task: Task) => {
     setSelectedTask(task);
     closeTaskModal();
-  };
+  }, [closeTaskModal]);
 
-  const openCreateTaskModal = () => setIsCreateTaskModalVisible(true);
-  const closeCreateTaskModal = () => setIsCreateTaskModalVisible(false);
+  const openCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(true), []);
+  const closeCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(false), []);
 
-  const openManageTagsModal = () => setIsManageTagsModalVisible(true);
-  const closeManageTagsModal = () => setIsManageTagsModalVisible(false);
+  const openManageTagsModal = useCallback(() => setIsManageTagsModalVisible(true), []);
+  const closeManageTagsModal = useCallback(() => setIsManageTagsModalVisible(false), []);
 
-  const addTask = async (title: string, tagId?: number) => {
+  const addTask = useCallback(async (title: string, tagId?: number) => {
     try {
       await TaskModel.insertTask(title, undefined, tagId);
       await loadData();
       closeCreateTaskModal();
     } catch (error) {
-      console.error('Erro ao criar tarefa:', error);
       Alert.alert('Erro', 'Não foi possível criar a tarefa.');
     }
-  };
+  }, [loadData, closeCreateTaskModal]);
 
-  const addTag = async (name: string, color: string) => {
-    await TagModel.insertTag(name, color);
-    await loadData();
-  };
+  const addTag = useCallback(async (name: string, color: string) => {
+    try {
+      await TagModel.insertTag(name, color);
+      await loadData();
+    } catch (error) {
+      console.error('[ViewModel] Erro ao adicionar tag:', error);
+    }
+  }, [loadData]);
 
-  const updateTag = async (id: number, name: string, color: string) => {
-    await TagModel.updateTag(id, name, color);
-    await loadData();
-  };
+  const updateTag = useCallback(async (id: number, name: string, color: string) => {
+    try {
+      await TagModel.updateTag(id, name, color);
+      await loadData();
+    } catch (error) {
+      console.error('[ViewModel] Erro ao atualizar tag:', error);
+    }
+  }, [loadData]);
 
-  const deleteTag = async (id: number) => {
-    await TagModel.deleteTag(id);
-    await loadData();
-  };
-
-  const formattedTime = formatTime(timeLeft);
-  const buttonTitle = isRunning ? "PAUSAR FOCO" : "INICIAR FOCO";
-  const progress = 1 - (timeLeft / INITIAL_TIME);
+  const deleteTag = useCallback(async (id: number) => {
+    try {
+      await TagModel.deleteTag(id);
+      await loadData();
+    } catch (error) {
+      console.error('[ViewModel] Erro ao deletar tag:', error);
+    }
+  }, [loadData]);
 
   return {
-    formattedTime,
+    formattedTime: formatTime(timeLeft),
     isRunning,
-    buttonTitle,
+    buttonTitle: isRunning ? "PAUSAR FOCO" : "INICIAR FOCO",
     toggleTimer,
-    progress,
+    progress: 1 - (timeLeft / INITIAL_TIME),
     tasks,
     tags,
     selectedTask,

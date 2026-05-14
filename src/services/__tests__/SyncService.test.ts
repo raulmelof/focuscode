@@ -1,6 +1,6 @@
 import { SyncService } from '../SyncService';
 import { getDBConnection } from '../../data/database/database';
-import { writeBatch, getDocs, doc, collection, query } from 'firebase/firestore';
+import { setDoc, deleteDoc, getDocs, doc, collection } from 'firebase/firestore';
 
 jest.mock('expo-sqlite', () => ({
   openDatabaseAsync: jest.fn()
@@ -8,7 +8,7 @@ jest.mock('expo-sqlite', () => ({
 
 jest.mock('../../data/database/database');
 jest.mock('../firebase', () => ({
-  auth: { currentUser: { uid: 'test-user-id' } },
+  auth: { currentUser: { uid: 'test-user-id', email: 'test@example.com' } },
   db: {}
 }));
 
@@ -16,10 +16,11 @@ jest.mock('firebase/firestore', () => {
   const actual = jest.requireActual('firebase/firestore');
   return {
     ...actual,
-    writeBatch: jest.fn(),
+    setDoc: jest.fn(),
+    deleteDoc: jest.fn(),
     getDocs: jest.fn(),
-    collection: jest.fn((db, name) => name), // Retorna o nome da coleção como identificador
-    query: jest.fn((col) => col), // Retorna o nome da coleção
+    collection: jest.fn((db, name) => name),
+    query: jest.fn((col) => col),
     where: jest.fn(),
     doc: jest.fn()
   };
@@ -27,7 +28,6 @@ jest.mock('firebase/firestore', () => {
 
 describe('SyncService', () => {
   let mockDb: any;
-  let mockBatch: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -38,13 +38,6 @@ describe('SyncService', () => {
       getFirstAsync: jest.fn()
     };
     (getDBConnection as jest.Mock).mockResolvedValue(mockDb);
-
-    mockBatch = {
-      set: jest.fn(),
-      delete: jest.fn(),
-      commit: jest.fn()
-    };
-    (writeBatch as jest.Mock).mockReturnValue(mockBatch);
   });
 
   it('deve realizar push de novas tasks e tags', async () => {
@@ -69,8 +62,7 @@ describe('SyncService', () => {
 
     expect(mockDb.runAsync).toHaveBeenCalledWith('UPDATE tasks SET firebaseId = ? WHERE id = ?', ['new-id', 1]);
     expect(mockDb.runAsync).toHaveBeenCalledWith('UPDATE tags SET firebaseId = ? WHERE id = ?', ['new-id', 10]);
-    expect(mockBatch.set).toHaveBeenCalledTimes(2);
-    expect(mockBatch.commit).toHaveBeenCalled();
+    expect(setDoc).toHaveBeenCalledTimes(2);
   });
 
   it('deve realizar pull de tasks e tags remotas', async () => {
