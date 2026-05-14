@@ -106,7 +106,6 @@ export const useHomeViewModel = () => {
     toggleTimer,
     progress,
     tasks,
-    setTasks,
     selectedTask,
     isTaskModalVisible,
     openTaskModal,

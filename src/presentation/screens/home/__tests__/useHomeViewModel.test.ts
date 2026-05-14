@@ -70,8 +70,7 @@ describe('useHomeViewModel', () => {
   });
 
   it('should clear tasks when user is null (logout cache cleanup)', async () => {
-    const { useAuth } = require('../../../../contexts/AuthContext');
-    // Simula logout: user = null
+    // Simula logout: user = null (usa o import já declarado no topo)
     (useAuth as jest.Mock).mockReturnValue({ user: null, isLoading: false });
 
     const { result } = renderHook(() => useHomeViewModel());
