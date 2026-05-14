@@ -23,7 +23,6 @@ export const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
 
   const isEmailValid = email === '' || /\S+@\S+\.\S+/.test(email);
 
@@ -31,7 +30,6 @@ export const ForgotPasswordScreen = () => {
     if (!email || !isEmailValid) return;
     
     setIsLoading(true);
-    setErrorMessage('');
     try {
       await sendPasswordResetEmail(auth, email);
       setIsSent(true);
