@@ -138,6 +138,7 @@ const createWebDBAdapter = (): DatabaseConnection => {
 };
 
 let webDB: DatabaseConnection | null = null;
+let nativeDBPromise: Promise<DatabaseConnection> | null = null;
 
 export const getDBConnection = async (): Promise<DatabaseConnection> => {
   if (Platform.OS === 'web') {
@@ -151,8 +152,11 @@ export const getDBConnection = async (): Promise<DatabaseConnection> => {
     }
     return webDB;
   }
-  const db = await SQLite.openDatabaseAsync('focuscode.db');
-  return db as unknown as DatabaseConnection;
+  
+  if (!nativeDBPromise) {
+    nativeDBPromise = SQLite.openDatabaseAsync('focuscode.db').then(db => db as unknown as DatabaseConnection);
+  }
+  return nativeDBPromise;
 };
 
 let initPromise: Promise<void> | null = null;

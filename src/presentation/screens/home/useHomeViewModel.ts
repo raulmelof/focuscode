@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation';
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
@@ -14,6 +14,7 @@ import { initDB } from '../../../data/database/database';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const isFocused = useIsFocused();
   const INITIAL_TIME = 1 * 60;
 
   const { user } = useAuth();
@@ -37,10 +38,8 @@ export const useHomeViewModel = () => {
     }
     try {
       await initDB();
-      const [localTasks, dbTags] = await Promise.all([
-        TaskModel.getTasks(user.uid),
-        TagModel.getTags(user.uid),
-      ]);
+      const localTasks = await TaskModel.getTasks(user.uid);
+      const dbTags = await TagModel.getTags(user.uid);
       setTasks(localTasks.filter(t => !t.isCompleted));
       setTags(dbTags);
     } catch (error) {
@@ -77,7 +76,7 @@ export const useHomeViewModel = () => {
     Alert.alert('Foco Pausado', 'O aparelho deve ficar com a tela virada para baixo.');
   }, [pause]);
 
-  useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
+  useFlipToFocus(isFlipEnabled && isFocused, isRunning, start, handlePauseFromSensor);
 
   const toggleTimer = useCallback(() => {
     if (isRunning) pause(); else start();

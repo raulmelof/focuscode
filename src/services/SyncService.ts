@@ -42,20 +42,20 @@ export class SyncService {
     const db = await getDBConnection();
 
     // Sincronização de Tags (Individual para ser resiliente a erros de permissão)
-    const localTags = await db.getAllAsync<LocalTag>('SELECT * FROM tags WHERE userId = ?', [userId]);
+    const localTags = await db.getAllAsync<LocalTag>('SELECT * FROM tags WHERE userId = ?', [userId ?? '']);
     for (const tag of localTags) {
       try {
         let docRef;
         if (!tag.firebaseId) {
           docRef = doc(collection(firestoreDb, 'tags'));
-          await db.runAsync('UPDATE tags SET firebaseId = ? WHERE id = ?', [docRef.id, tag.id]);
+          await db.runAsync('UPDATE tags SET firebaseId = ? WHERE id = ?', [docRef.id, tag.id ?? 0]);
         } else {
           docRef = doc(firestoreDb, 'tags', tag.firebaseId);
         }
 
         if (tag.isDeleted === 1) {
           await deleteDoc(docRef);
-          await db.runAsync('UPDATE tags SET firebaseId = NULL WHERE id = ?', [tag.id]);
+          await db.runAsync('UPDATE tags SET firebaseId = NULL WHERE id = ?', [tag.id ?? 0]);
         } else {
           await setDoc(docRef, {
             userId,
@@ -74,20 +74,20 @@ export class SyncService {
     }
 
     // Sincronização de Tarefas (filtradas pelo userId)
-    const localTasks = await db.getAllAsync<LocalTask>('SELECT * FROM tasks WHERE userId = ?', [userId]);
+    const localTasks = await db.getAllAsync<LocalTask>('SELECT * FROM tasks WHERE userId = ?', [userId ?? '']);
     for (const task of localTasks) {
       try {
         let docRef;
         if (!task.firebaseId) {
           docRef = doc(collection(firestoreDb, 'tasks'));
-          await db.runAsync('UPDATE tasks SET firebaseId = ? WHERE id = ?', [docRef.id, task.id]);
+          await db.runAsync('UPDATE tasks SET firebaseId = ? WHERE id = ?', [docRef.id, task.id ?? 0]);
         } else {
           docRef = doc(firestoreDb, 'tasks', task.firebaseId);
         }
 
         if (task.isDeleted === 1) {
           await deleteDoc(docRef);
-          await db.runAsync('DELETE FROM tasks WHERE id = ?', [task.id]);
+          await db.runAsync('DELETE FROM tasks WHERE id = ?', [task.id ?? 0]);
         } else {
           await setDoc(docRef, {
             userId,
@@ -119,18 +119,18 @@ export class SyncService {
         const firebaseId = docSnap.id;
         const existingTag = await db.getFirstAsync<LocalTag>(
           'SELECT id, updatedAt FROM tags WHERE firebaseId = ?',
-          [firebaseId]
+          [firebaseId ?? '']
         );
 
         if (!existingTag) {
           await db.runAsync(
             'INSERT INTO tags (name, color, firebaseId, updatedAt, userId) VALUES (?, ?, ?, ?, ?)',
-            [data.name, data.color, firebaseId, data.updatedAt || Date.now(), userId]
+            [data.name ?? 'Tag', data.color ?? '#000000', firebaseId ?? '', data.updatedAt ?? Date.now(), userId ?? '']
           );
         } else if (data.updatedAt && data.updatedAt > existingTag.updatedAt) {
           await db.runAsync(
             'UPDATE tags SET name = ?, color = ?, updatedAt = ? WHERE id = ?',
-            [data.name, data.color, data.updatedAt, existingTag.id]
+            [data.name ?? 'Tag', data.color ?? '#000000', data.updatedAt ?? Date.now(), existingTag.id ?? 0]
           );
         }
       }
@@ -142,24 +142,24 @@ export class SyncService {
         const firebaseId = docSnap.id;
         const existingTask = await db.getFirstAsync<LocalTask>(
           'SELECT id, updatedAt FROM tasks WHERE firebaseId = ?',
-          [firebaseId]
+          [firebaseId ?? '']
         );
 
         let localTagId: number | null = null;
         if (data.tagId) {
-          const tag = await db.getFirstAsync<LocalTag>('SELECT id FROM tags WHERE firebaseId = ?', [data.tagId]);
+          const tag = await db.getFirstAsync<LocalTag>('SELECT id FROM tags WHERE firebaseId = ?', [data.tagId ?? '']);
           if (tag) localTagId = tag.id;
         }
 
         if (!existingTask) {
           await db.runAsync(
             'INSERT INTO tasks (title, description, isCompleted, tagId, firebaseId, updatedAt, userId) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [data.title, data.description || null, data.isCompleted ? 1 : 0, localTagId, firebaseId, data.updatedAt || Date.now(), userId]
+            [data.title ?? 'Tarefa', data.description ?? null, data.isCompleted ? 1 : 0, localTagId ?? null, firebaseId ?? '', data.updatedAt ?? Date.now(), userId ?? '']
           );
         } else if (data.updatedAt && data.updatedAt > existingTask.updatedAt) {
           await db.runAsync(
             'UPDATE tasks SET title = ?, description = ?, isCompleted = ?, tagId = ?, updatedAt = ? WHERE id = ?',
-            [data.title, data.description || null, data.isCompleted ? 1 : 0, localTagId, data.updatedAt, existingTask.id]
+            [data.title ?? 'Tarefa', data.description ?? null, data.isCompleted ? 1 : 0, localTagId ?? null, data.updatedAt ?? Date.now(), existingTask.id ?? 0]
           );
         }
       }
