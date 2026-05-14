@@ -5,8 +5,14 @@ import { getDBConnection } from '../data/database/database';
 export class SyncService {
   static async sync() {
     try {
+      console.log('Iniciando sincronização...');
+      
+      // Só sincroniza se houver um usuário autenticado (e-mail ou anônimo)
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user) {
+        console.log('Sincronização ignorada: nenhum usuário autenticado.');
+        return;
+      }
 
       await this.pushLocalChanges(user.uid);
       await this.pullRemoteChanges(user.uid);

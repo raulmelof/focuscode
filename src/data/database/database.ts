@@ -28,13 +28,15 @@ const createWebDBAdapter = (): DatabaseConnection => {
 
     runAsync: async (sql: string, params: any[] = []) => {
       const sqlUpper = sql.toUpperCase();
-      
+
+
       if (sqlUpper.includes('INSERT INTO')) {
         const tableNameMatch = sql.match(/INSERT INTO (\w+)/i);
         const tableName = tableNameMatch ? tableNameMatch[1] : '';
         const columnsMatch = sql.match(/\(([^)]+)\)/);
         const columns = columnsMatch ? columnsMatch[1].split(',').map(c => c.trim()) : [];
-        
+
+
         if (tableName) {
           if (!tables[tableName]) {
             tables[tableName] = [];
@@ -58,7 +60,7 @@ const createWebDBAdapter = (): DatabaseConnection => {
         const tableName = tableNameMatch ? tableNameMatch[1] : '';
         if (tableName && tables[tableName]) {
           const idParam = params[params.length - 1];
-          const row = tables[tableName].find(r => r.id == idParam || r.firebaseId == idParam);
+          const row = tables[tableName].find(r => r.id === Number(idParam) || r.firebaseId === idParam);
           if (row) {
             if (sql.includes('firebaseId = ?')) row.firebaseId = params[0];
             if (sql.includes('isCompleted = ?')) row.isCompleted = params[0];
@@ -72,7 +74,7 @@ const createWebDBAdapter = (): DatabaseConnection => {
         const tableName = tableNameMatch ? tableNameMatch[1] : '';
         if (tableName && tables[tableName]) {
           const idParam = params[0];
-          tables[tableName] = tables[tableName].filter(r => r.id != idParam);
+          tables[tableName] = tables[tableName].filter(r => r.id !== Number(idParam));
         }
         return { changes: 1, lastInsertRowId: 0 };
       }
@@ -114,7 +116,7 @@ export const getDBConnection = async (): Promise<DatabaseConnection> => {
       try {
         const realDb = await SQLite.openDatabaseAsync('focuscode.db');
         webDB = realDb as unknown as DatabaseConnection;
-      } catch (e) {
+      } catch {
         webDB = createWebDBAdapter();
       }
     }
@@ -165,7 +167,7 @@ export const initDB = async () => {
       ];
 
       for (const query of alterTables) {
-        try { await db.execAsync(query); } catch (e) {}
+        try { await db.execAsync(query); } catch { }
       }
     } catch (error) {
       initPromise = null;

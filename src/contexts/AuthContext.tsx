@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import { SyncService } from '../services/SyncService';
 
 interface AuthContextData {
   user: User | null;
@@ -18,6 +19,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsLoading(false);
+
+      // Dispara a sincronização quando o usuário faz login
+      if (currentUser) {
+        SyncService.sync().catch(err => console.error('AuthContext: Erro no SyncService:', err));
+      }
     });
 
     // Cleanup subscription on unmount

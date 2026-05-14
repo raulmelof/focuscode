@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
@@ -11,6 +11,7 @@ import { CreateTaskModal } from '../../components/CreateTaskModal';
 import { ManageTagsModal } from '../../components/ManageTagsModal';
 import { styles } from './styles';
 import { useHomeViewModel } from './useHomeViewModel';
+import { signOut } from '../../../services/authService';
 
 export const HomeScreen = () => {
   const { 
@@ -43,9 +44,15 @@ export const HomeScreen = () => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton} 
-          onPress={() => {}}
+          onPress={async () => {
+            const result = await signOut();
+            if (!result.success) {
+              Alert.alert('Erro', result.error || 'Erro ao sair.');
+            }
+            // AuthContext detecta o logout e redireciona para Login automaticamente
+          }}
         >
-          <Feather name="menu" size={32} color="#2A1128" />
+          <Feather name="log-out" size={28} color="#2A1128" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>FocusCode</Text>
         {Platform.OS !== 'web' && (
