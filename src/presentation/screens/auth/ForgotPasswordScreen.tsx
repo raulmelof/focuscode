@@ -14,6 +14,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '../../../services/firebase';
 
 export const ForgotPasswordScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -21,17 +23,25 @@ export const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const isEmailValid = email === '' || /\S+@\S+\.\S+/.test(email);
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     if (!email || !isEmailValid) return;
     
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    setErrorMessage('');
+    try {
+      await sendPasswordResetEmail(auth, email);
       setIsSent(true);
-    }, 2000);
+    } catch {
+      // Por segurança, mostramos a mesma mensagem de sucesso
+      // para não revelar se o e-mail existe ou não no sistema
+      setIsSent(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const content = (

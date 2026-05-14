@@ -1,5 +1,5 @@
 import { collection, doc, getDocs, writeBatch, query, where } from 'firebase/firestore';
-import { db as firestoreDb, auth, signInAnonymouslyToFirebase } from './firebase';
+import { db as firestoreDb, auth } from './firebase';
 import { getDBConnection } from '../data/database/database';
 
 export class SyncService {

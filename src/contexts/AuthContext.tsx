@@ -15,10 +15,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    console.log('AuthContext.tsx: Inscrevendo-se em onAuthStateChanged');
     // Inscreve-se nas mudanças de estado de autenticação (login, logoff, persistência)
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log('AuthContext.tsx: onAuthStateChanged disparado, currentUser:', currentUser ? currentUser.uid : 'null');
       setUser(currentUser);
       setIsLoading(false);
 

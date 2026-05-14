@@ -127,9 +127,9 @@ export const RegisterScreen = () => {
         </View>
 
         <TouchableOpacity 
-          style={[styles.primaryButton, (!name || !email || !password || isLoading) && styles.primaryButtonDisabled]} 
+          style={[styles.primaryButton, (!name || !email || !password || !confirmPassword || !isConfirmPasswordValid || isLoading) && styles.primaryButtonDisabled]} 
           onPress={handleRegister}
-          disabled={!name || !email || !password || isLoading}
+          disabled={!name || !email || !password || !confirmPassword || !isConfirmPasswordValid || isLoading}
         >
           {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Cadastrar</Text>}
         </TouchableOpacity>

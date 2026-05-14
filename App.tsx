@@ -12,14 +12,12 @@ export default function App() {
   const [isDBReady, setIsDBReady] = useState(false);
 
   useEffect(() => {
-    console.log('App.tsx: Iniciando initDB()');
     initDB()
       .then(async () => {
-        console.log('App.tsx: initDB() concluído com sucesso');
         setIsDBReady(true);
       })
       .catch(err => {
-        console.error('App.tsx: Erro no initDB():', err);
+        console.error('Erro ao inicializar o banco de dados:', err);
         // Libera a interface mesmo se o banco falhar (ex: Web com erro de SecurityError do OPFS)
         setIsDBReady(true); 
       });
