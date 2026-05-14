@@ -10,10 +10,11 @@ export class SyncService {
     try {
       console.log('Iniciando sincronização...');
       
-      // Garante que o usuário tem um UID anônimo para respeitar as regras do Firestore
-      let user = auth.currentUser;
+      // Só sincroniza se houver um usuário autenticado (e-mail ou anônimo)
+      const user = auth.currentUser;
       if (!user) {
-        user = await signInAnonymouslyToFirebase();
+        console.log('Sincronização ignorada: nenhum usuário autenticado.');
+        return;
       }
 
       await this.pushLocalChanges(user.uid);

@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
-import { signInAnonymouslyToFirebase } from '../../../services/firebase';
+import { signIn } from '../../../services/authService';
 
 export const LoginScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -22,6 +22,7 @@ export const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Validação visual básica
   const isEmailValid = email === '' || /\S+@\S+\.\S+/.test(email);
@@ -31,16 +32,17 @@ export const LoginScreen = () => {
     if (!email || !password || !isEmailValid || !isPasswordValid) return;
     
     setIsLoading(true);
+    setErrorMessage('');
     
     try {
-      // Faz o login anônimo simulando o acesso para testes
-      await signInAnonymouslyToFirebase();
-      // O AuthContext (onAuthStateChanged) fará a mudança de estado e a rota Home será liberada automaticamente
-    } catch (error) {
-      console.error('Erro no mock de login:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Erro ao tentar logar. Verifique o console.');
+      const result = await signIn(email, password);
+      if (!result.success) {
+        setErrorMessage(result.error || 'Erro ao fazer login.');
       }
+      // Se sucesso, o AuthContext (onAuthStateChanged) fará a mudança de estado automaticamente
+    } catch (error) {
+      console.error('Erro no login:', error);
+      setErrorMessage('Erro inesperado ao tentar logar.');
     } finally {
       setIsLoading(false);
     }
@@ -111,6 +113,10 @@ export const LoginScreen = () => {
             <Text style={styles.primaryButtonText}>Entrar</Text>
           )}
         </TouchableOpacity>
+
+        {errorMessage !== '' && (
+          <Text style={styles.loginErrorText}>{errorMessage}</Text>
+        )}
 
         <View style={styles.dividerContainer}>
           <View style={styles.divider} />
@@ -224,6 +230,12 @@ const styles = StyleSheet.create({
   },
   primaryButtonDisabled: {
     backgroundColor: 'rgba(42, 17, 40, 0.5)',
+  },
+  loginErrorText: {
+    color: '#e83f5b',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 12,
   },
   primaryButtonText: {
     color: '#E6D5A7',

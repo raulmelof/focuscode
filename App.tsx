@@ -6,7 +6,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppStack } from './src/presentation/routes/AppStack';
 import { initDB } from './src/data/database/database';
 import './src/services/firebase'; // Inicializa Firebase
-import { SyncService } from './src/services/SyncService';
 import { AuthProvider } from './src/contexts/AuthContext';
 
 export default function App() {
@@ -18,9 +17,6 @@ export default function App() {
       .then(async () => {
         console.log('App.tsx: initDB() concluído com sucesso');
         setIsDBReady(true);
-        
-        // Roda a sincronização em background sem bloquear a UI
-        SyncService.sync().catch(err => console.error('App.tsx: Erro no SyncService:', err));
       })
       .catch(err => {
         console.error('App.tsx: Erro no initDB():', err);

@@ -15,6 +15,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { signUp } from '../../../services/authService';
 
 export const RegisterScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -24,23 +25,31 @@ export const RegisterScreen = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const isEmailValid = email === '' || /\S+@\S+\.\S+/.test(email);
   const isPasswordValid = password === '' || password.length >= 6;
   const isConfirmPasswordValid = confirmPassword === '' || confirmPassword === password;
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name || !email || !password || !isEmailValid || !isPasswordValid || !isConfirmPasswordValid) return;
     
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      if (Platform.OS === 'web') {
-        window.alert('Conta criada com sucesso! (Navegação bloqueada no web para telas de fluxo)');
+    setErrorMessage('');
+
+    try {
+      const result = await signUp(email, password);
+      if (result.success) {
+        // Cadastro feito com sucesso — o AuthContext detecta o novo usuário e redireciona automaticamente
       } else {
-        navigation.replace('Login');
+        setErrorMessage(result.error || 'Erro ao criar conta.');
       }
-    }, 2000);
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      setErrorMessage('Erro inesperado ao criar conta.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const content = (
@@ -124,6 +133,10 @@ export const RegisterScreen = () => {
         >
           {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Cadastrar</Text>}
         </TouchableOpacity>
+
+        {errorMessage !== '' && (
+          <Text style={styles.registerErrorText}>{errorMessage}</Text>
+        )}
 
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backButtonText}>Já tenho uma conta</Text>
@@ -223,6 +236,12 @@ const styles = StyleSheet.create({
   },
   primaryButtonDisabled: {
     backgroundColor: 'rgba(42, 17, 40, 0.5)',
+  },
+  registerErrorText: {
+    color: '#e83f5b',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 12,
   },
   primaryButtonText: {
     color: '#E6D5A7',
