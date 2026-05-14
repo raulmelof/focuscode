@@ -15,19 +15,20 @@ import { Feather } from '@expo/vector-icons';
 import { Tag } from '../../types/Tag';
 
 const TAG_COLORS = [
-  '#E83F5B', // Red
-  '#04D361', // Green
-  '#8257E5', // Purple
-  '#FFB800', // Yellow
-  '#00BFFF', // Blue
-  '#FF69B4', // Pink
-  '#A0522D', // Brown
-  '#2A1128', // Dark
+  '#E83F5B',
+  '#04D361',
+  '#8257E5',
+  '#FFB800',
+  '#00BFFF',
+  '#FF69B4',
+  '#A0522D',
+  '#2A1128',
 ];
 
 interface ManageTagsModalProps {
   visible: boolean;
   onClose: () => void;
+  onBack?: () => void;
   tags: Tag[];
   onAddTag: (name: string, color: string) => Promise<void>;
   onUpdateTag: (id: number, name: string, color: string) => Promise<void>;
@@ -37,6 +38,7 @@ interface ManageTagsModalProps {
 export const ManageTagsModal = ({ 
   visible, 
   onClose, 
+  onBack,
   tags, 
   onAddTag, 
   onUpdateTag, 
@@ -45,6 +47,7 @@ export const ManageTagsModal = ({
   const [editingTagId, setEditingTagId] = useState<number | null>(null);
   const [tagName, setTagName] = useState('');
   const [tagColor, setTagColor] = useState(TAG_COLORS[0]);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (!visible) {
@@ -70,12 +73,14 @@ export const ManageTagsModal = ({
     try {
       if (editingTagId) {
         await onUpdateTag(editingTagId, tagName.trim(), tagColor);
+        setSuccessMessage('Tag atualizada com sucesso!');
       } else {
         await onAddTag(tagName.trim(), tagColor);
+        setSuccessMessage('Tag criada com sucesso!');
       }
       resetForm();
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error("Erro ao salvar tag", error);
       Alert.alert('Erro', 'Não foi possível salvar a tag.');
     }
   };
@@ -94,7 +99,6 @@ export const ManageTagsModal = ({
               await onDeleteTag(id);
               if (editingTagId === id) resetForm();
             } catch (error) {
-              console.error("Erro ao deletar tag", error);
               Alert.alert('Erro', 'Não foi possível excluir a tag.');
             }
           }
@@ -134,11 +138,25 @@ export const ManageTagsModal = ({
         <View style={styles.content}>
           
           <View style={styles.header}>
+            {onBack ? (
+              <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                <Feather name="arrow-left" size={24} color="#2A1128" />
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: 32 }} />
+            )}
             <Text style={styles.headerTitle}>Gerenciar Tags</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Feather name="x" size={24} color="#2A1128" />
             </TouchableOpacity>
           </View>
+
+          {successMessage !== '' && (
+            <View style={styles.successBanner}>
+              <Feather name="check-circle" size={16} color="#04D361" />
+              <Text style={styles.successText}>{successMessage}</Text>
+            </View>
+          )}
 
           <FlatList
             data={tags}
@@ -228,6 +246,24 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  backButton: {
+    padding: 4,
+  },
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(4, 211, 97, 0.15)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  successText: {
+    color: '#04D361',
+    fontSize: 14,
+    fontWeight: '600',
   },
   list: {
     maxHeight: 250,

@@ -20,7 +20,11 @@ export default function App() {
         // Roda a sincronização em background sem bloquear a UI
         SyncService.sync().catch(console.error);
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error('Erro ao inicializar o banco de dados:', err);
+        // Libera a interface mesmo se o banco falhar para não travar no loading
+        setIsDBReady(true);
+      });
   }, []);
 
   if (!isDBReady) {
