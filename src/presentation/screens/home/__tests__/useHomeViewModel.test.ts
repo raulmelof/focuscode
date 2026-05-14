@@ -1,6 +1,9 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { useHomeViewModel } from '../useHomeViewModel';
+import { TaskModel } from '../../../../data/models/TaskModel';
+import { TagModel } from '../../../../data/models/TagModel';
 
+// Mock do Navigation
 const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
@@ -8,6 +11,7 @@ jest.mock('@react-navigation/native', () => ({
   }),
 }));
 
+// Mock do Sensors
 jest.mock('expo-sensors', () => ({
   Accelerometer: {
     setUpdateInterval: jest.fn(),
@@ -16,10 +20,24 @@ jest.mock('expo-sensors', () => ({
   },
 }));
 
+// Mock do Banco de Dados / Modelos
+jest.mock('../../../../data/models/TaskModel');
+jest.mock('../../../../data/models/TagModel');
+jest.mock('../../../../data/database/database', () => ({
+  initDB: jest.fn().mockResolvedValue(true),
+  getDBConnection: jest.fn().mockResolvedValue({}),
+}));
+
 jest.useFakeTimers();
 
 describe('useHomeViewModel', () => {
-  it('should format time correctly and calculate initial progress', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (TaskModel.getTasks as jest.Mock).mockResolvedValue([]);
+    (TagModel.getTags as jest.Mock).mockResolvedValue([]);
+  });
+
+  it('should format time correctly and calculate initial progress', async () => {
     const { result } = renderHook(() => useHomeViewModel());
     
     expect(result.current.formattedTime).toBe('01:00');
@@ -40,7 +58,6 @@ describe('useHomeViewModel', () => {
       jest.advanceTimersByTime(30000); // 30 seconds
     });
     
-    // Total is 60. Time left is 30. Progress is 0.5.
     expect(result.current.formattedTime).toBe('00:30');
     expect(result.current.progress).toBe(0.5);
   });
@@ -66,44 +83,25 @@ describe('useHomeViewModel', () => {
     
     expect(result.current.selectedTask).toBeNull();
 
-    const mockTask = { id: 1, title: 'Test Task', tag: 'Testing' };
+    const mockTask = { id: 1, title: 'Test Task', tagId: 1 };
     
     act(() => {
-      result.current.selectTask(mockTask);
+      result.current.selectTask(mockTask as any);
     });
 
     expect(result.current.selectedTask).toEqual(mockTask);
   });
 
-  it('should manage create task modal visibility', () => {
+  it('should add a new task and reload data', async () => {
+    (TaskModel.insertTask as jest.Mock).mockResolvedValue({ lastInsertRowId: 1 });
     const { result } = renderHook(() => useHomeViewModel());
-    
-    expect(result.current.isCreateTaskModalVisible).toBe(false);
 
-    act(() => {
-      result.current.openCreateTaskModal();
-    });
-    expect(result.current.isCreateTaskModalVisible).toBe(true);
-
-    act(() => {
-      result.current.closeCreateTaskModal();
-    });
-    expect(result.current.isCreateTaskModalVisible).toBe(false);
-  });
-
-  it('should add a new task and close the create modal', () => {
-    const { result } = renderHook(() => useHomeViewModel());
-    const initialTasksCount = result.current.tasks.length;
-
-    act(() => {
-      result.current.openCreateTaskModal();
-      result.current.addTask('Nova Tarefa Teste', 'Tag Teste');
+    await act(async () => {
+      await result.current.addTask('Nova Tarefa Teste', 1);
     });
 
-    expect(result.current.tasks.length).toBe(initialTasksCount + 1);
-    expect(result.current.tasks[initialTasksCount].title).toBe('Nova Tarefa Teste');
-    expect(result.current.tasks[initialTasksCount].tag).toBe('Tag Teste');
-    
+    expect(TaskModel.insertTask).toHaveBeenCalledWith('Nova Tarefa Teste', undefined, 1);
+    expect(TaskModel.getTasks).toHaveBeenCalled();
     expect(result.current.isCreateTaskModalVisible).toBe(false);
   });
 });

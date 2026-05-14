@@ -8,6 +8,7 @@ import { TimerDisplay } from '../../components/TimerDisplay';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { TaskSelectionModal } from '../../components/TaskSelectionModal';
 import { CreateTaskModal } from '../../components/CreateTaskModal';
+import { ManageTagsModal } from '../../components/ManageTagsModal';
 import { styles } from './styles';
 import { useHomeViewModel } from './useHomeViewModel';
 import { signOut } from '../../../services/authService';
@@ -24,16 +25,22 @@ export const HomeScreen = () => {
     closeTaskModal,
     selectTask,
     tasks,
+    tags,
     isCreateTaskModalVisible,
     openCreateTaskModal,
     closeCreateTaskModal,
     addTask,
+    isManageTagsModalVisible,
+    openManageTagsModal,
+    closeManageTagsModal,
+    addTag,
+    updateTag,
+    deleteTag,
     isFlipEnabled,
     setIsFlipEnabled
   } = useHomeViewModel(); 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Novo Cabeçalho: Menu Lateral + Título do App */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton} 
@@ -60,10 +67,8 @@ export const HomeScreen = () => {
         )}
       </View>
 
-      {/* Conteúdo Central */}
       <View style={styles.container}>
 
-        {/* Pílula de Tarefa (Acima do Círculo) */}
         <TouchableOpacity 
           style={styles.taskPill} 
           activeOpacity={0.7} 
@@ -75,15 +80,12 @@ export const HomeScreen = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Círculo com a Caneca */}
         <PomodoroCircle progress={progress} />
 
-        {/* Relógio */}
         <View style={styles.timerContainer}>
           <TimerDisplay time={formattedTime} />
         </View>
 
-        {/* Botão Principal */}
         <PrimaryButton title={buttonTitle} onPress={toggleTimer} />
       </View>
 
@@ -92,6 +94,7 @@ export const HomeScreen = () => {
         onClose={closeTaskModal} 
         onSelectTask={selectTask}
         tasks={tasks}
+        tags={tags}
         onCreateTask={openCreateTaskModal}
       />
 
@@ -99,6 +102,24 @@ export const HomeScreen = () => {
         visible={isCreateTaskModalVisible}
         onClose={closeCreateTaskModal}
         onSave={addTask}
+        tags={tags}
+        onManageTags={() => {
+          closeCreateTaskModal();
+          openManageTagsModal();
+        }}
+      />
+
+      <ManageTagsModal
+        visible={isManageTagsModalVisible}
+        onClose={closeManageTagsModal}
+        onBack={() => {
+          closeManageTagsModal();
+          openCreateTaskModal();
+        }}
+        tags={tags}
+        onAddTag={addTag}
+        onUpdateTag={updateTag}
+        onDeleteTag={deleteTag}
       />
 
     </SafeAreaView>
