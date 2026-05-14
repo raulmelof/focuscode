@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Modal, View, Text, TouchableOpacity, FlatList, StyleSheet, Animated, PanResponder } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Task } from '../../utils/mockTasks';
+import { Task } from '../../types/Task';
 
 interface TaskSelectionModalProps {
   visible: boolean;
@@ -48,7 +48,9 @@ export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, onCr
     >
       <View>
         <Text style={styles.taskTitle}>{item.title}</Text>
-        <Text style={styles.taskTag}>{item.tag}</Text>
+        {item.description ? (
+          <Text style={styles.taskTag}>{item.description}</Text>
+        ) : null}
       </View>
       <Feather name="chevron-right" size={24} color="#2A1128" opacity={0.5} />
     </TouchableOpacity>

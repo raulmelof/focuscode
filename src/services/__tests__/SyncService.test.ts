@@ -25,13 +25,15 @@ jest.mock('firebase/firestore', () => ({
   doc: jest.fn()
 }));
 
+const TEST_USER_ID = 'test-user-id';
+
 describe('SyncService', () => {
   let mockDb: any;
   let mockBatch: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     mockDb = {
       getAllAsync: jest.fn(),
       runAsync: jest.fn(),
@@ -49,10 +51,11 @@ describe('SyncService', () => {
 
   it('deve realizar push de novas tarefas (firebaseId null)', async () => {
     // Configura mock de tasks locais onde firebaseId é null (novo registro)
+    // A query agora filtra por userId: 'SELECT * FROM tasks WHERE userId = ?'
     mockDb.getAllAsync.mockImplementation((queryStr: string) => {
       if (queryStr.includes('tasks')) {
         return Promise.resolve([
-          { id: 1, title: 'Nova Task', description: 'Desc', isCompleted: 0, tagId: null, firebaseId: null, updatedAt: 1000, isDeleted: 0 }
+          { id: 1, title: 'Nova Task', description: 'Desc', isCompleted: 0, tagId: null, firebaseId: null, updatedAt: 1000, isDeleted: 0, userId: TEST_USER_ID }
         ]);
       }
       return Promise.resolve([]);
@@ -68,37 +71,35 @@ describe('SyncService', () => {
 
     // Verifica se atualizou o SQLite com o novo firebaseId
     expect(mockDb.runAsync).toHaveBeenCalledWith('UPDATE tasks SET firebaseId = ? WHERE id = ?', ['new-firebase-id', 1]);
-    
+
     // Verifica se adicionou ao batch do Firestore
     expect(mockBatch.set).toHaveBeenCalled();
     expect(mockBatch.commit).toHaveBeenCalled();
   });
 
-  it('deve realizar pull de tarefas remotas', async () => {
+  it('deve realizar pull de tarefas remotas e salvar com userId', async () => {
     // SQLite vazio
     mockDb.getAllAsync.mockResolvedValue([]);
-    
+
     // Firestore com dados
-    (getDocs as jest.Mock).mockImplementation((q) => {
-      // Se for a query de tasks
-      return Promise.resolve({
-        docs: [
-          {
-            id: 'remote-id-1',
-            data: () => ({ title: 'Remote Task', description: null, isCompleted: false, tagId: null, updatedAt: 2000 })
-          }
-        ]
-      });
+    (getDocs as jest.Mock).mockResolvedValue({
+      docs: [
+        {
+          id: 'remote-id-1',
+          data: () => ({ title: 'Remote Task', description: null, isCompleted: false, tagId: null, updatedAt: 2000 })
+        }
+      ]
     });
 
     mockDb.getFirstAsync.mockResolvedValue(null); // Localmente não existe
 
     await SyncService.sync();
 
-    // Verifica se inseriu localmente
+    // Verifica se inseriu localmente com userId no INSERT
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO tasks'),
-      ['Remote Task', null, 0, null, 'remote-id-1', 2000]
+      // userId agora é o último parâmetro
+      ['Remote Task', null, 0, null, 'remote-id-1', 2000, TEST_USER_ID]
     );
   });
 });
