@@ -40,13 +40,25 @@ describe('TagModel', () => {
     expect(tags[0].name).toBe('Study');
   });
 
-  it('should soft-delete a tag', async () => {
+  it('should soft-delete a tag with userId', async () => {
     const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
 
-    await TagModel.deleteTag(1);
+    await TagModel.deleteTag(TEST_USER_ID, 1);
     expect(mockRunAsync).toHaveBeenCalledWith(
-      'UPDATE tags SET isDeleted = 1, updatedAt = ? WHERE id = ?',
-      [1234567890, 1]
+      'UPDATE tags SET isDeleted = 1, updatedAt = ? WHERE id = ? AND userId = ?',
+      [1234567890, 1, TEST_USER_ID]
+    );
+
+    mockDateNow.mockRestore();
+  });
+
+  it('should update a tag with userId', async () => {
+    const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+    await TagModel.updateTag(TEST_USER_ID, 1, 'Work', '#0000FF');
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE tags SET name = ?, color = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+      ['Work', '#0000FF', 1234567890, 1, TEST_USER_ID]
     );
 
     mockDateNow.mockRestore();

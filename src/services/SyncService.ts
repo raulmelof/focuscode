@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db as firestoreDb, auth } from './firebase';
-import { getDBConnection } from '../data/database/database';
+import { getDBConnection, initDB } from '../data/database/database';
 
 interface LocalTask {
   id: number;
@@ -30,6 +30,7 @@ export class SyncService {
       const user = auth.currentUser;
       if (!user) return;
 
+      await initDB();
       await this.pushLocalChanges(user.uid);
       await this.pullRemoteChanges(user.uid);
     } catch (_error) {

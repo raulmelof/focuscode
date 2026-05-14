@@ -66,7 +66,7 @@ export const useHomeViewModel = () => {
     navigation.navigate('BreakScreen');
   }, [navigation, selectedTask, user]);
 
-  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
+  const { timeLeft, isRunning, start, pause } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
     onFocusEnd: () => handleFocusEnd(),
   });
@@ -124,22 +124,24 @@ export const useHomeViewModel = () => {
   }, [user, fetchTasks]);
 
   const updateTag = useCallback(async (id: number, name: string, color: string) => {
+    if (!user) return;
     try {
-      await TagModel.updateTag(id, name, color);
+      await TagModel.updateTag(user.uid, id, name, color);
       await fetchTasks();
     } catch (error) {
       console.error('[ViewModel] Error updating tag:', error);
     }
-  }, [fetchTasks]);
+  }, [user, fetchTasks]);
 
   const deleteTag = useCallback(async (id: number) => {
+    if (!user) return;
     try {
-      await TagModel.deleteTag(id);
+      await TagModel.deleteTag(user.uid, id);
       await fetchTasks();
     } catch (error) {
       console.error('[ViewModel] Error deleting tag:', error);
     }
-  }, [fetchTasks]);
+  }, [user, fetchTasks]);
 
   return {
     formattedTime: formatTime(timeLeft),
