@@ -1,12 +1,41 @@
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
+const memoryDB = {
+  tasks: [] as any[],
+  tags: [] as any[]
+};
+
 export const getDBConnection = async () => {
   if (Platform.OS === 'web') {
     return {
       execAsync: async () => {},
-      getAllAsync: async () => [],
-      runAsync: async () => ({ lastInsertRowId: Math.floor(Math.random() * 1000) }),
+      getAllAsync: async (query: string) => {
+        if (query.includes('tasks')) return memoryDB.tasks.filter(t => !t.isDeleted);
+        if (query.includes('tags')) return memoryDB.tags.filter(t => !t.isDeleted);
+        return [];
+      },
+      runAsync: async (query: string, args: any[] = []) => {
+        const id = Math.floor(Math.random() * 100000);
+        if (query.includes('INSERT INTO tasks')) {
+          memoryDB.tasks.push({ id, title: args[0], description: args[1], isCompleted: args[2], tagId: args[3], isDeleted: 0 });
+        } else if (query.includes('INSERT INTO tags')) {
+          memoryDB.tags.push({ id, name: args[0], color: args[1], isDeleted: 0 });
+        } else if (query.includes('UPDATE tasks SET isCompleted')) {
+          const task = memoryDB.tasks.find(t => t.id === args[2]);
+          if (task) task.isCompleted = args[0];
+        } else if (query.includes('UPDATE tasks SET isDeleted')) {
+          const task = memoryDB.tasks.find(t => t.id === args[1]);
+          if (task) task.isDeleted = 1;
+        } else if (query.includes('UPDATE tags SET name')) {
+          const tag = memoryDB.tags.find(t => t.id === args[3]);
+          if (tag) { tag.name = args[0]; tag.color = args[1]; }
+        } else if (query.includes('UPDATE tags SET isDeleted')) {
+          const tag = memoryDB.tags.find(t => t.id === args[1]);
+          if (tag) tag.isDeleted = 1;
+        }
+        return { lastInsertRowId: id };
+      },
     } as any;
   }
   return await SQLite.openDatabaseAsync('focuscode.db');
