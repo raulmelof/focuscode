@@ -80,7 +80,7 @@ export const ManageTagsModal = ({
       }
       resetForm();
       setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (error) {
+    } catch {
       Alert.alert('Erro', 'Não foi possível salvar a tag.');
     }
   };
@@ -92,8 +92,8 @@ export const ManageTagsModal = ({
         try {
           await onDeleteTag(id);
           if (editingTagId === id) resetForm();
-        } catch (error) {
-          console.error('Erro ao excluir tag:', error);
+        } catch {
+          console.error('Erro ao excluir tag');
         }
       }
       return;
@@ -111,7 +111,7 @@ export const ManageTagsModal = ({
             try {
               await onDeleteTag(id);
               if (editingTagId === id) resetForm();
-            } catch (error) {
+            } catch {
               Alert.alert('Erro', 'Não foi possível excluir a tag.');
             }
           }

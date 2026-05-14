@@ -54,10 +54,9 @@ export const useHomeViewModel = () => {
       }
     }
     navigation.navigate('BreakScreen');
-    resetTimer(); 
   }, [navigation, selectedTask]);
 
-  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
+  const { timeLeft, isRunning, start, pause } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
     onFocusEnd: handleFocusEnd, 
   });
@@ -70,7 +69,7 @@ export const useHomeViewModel = () => {
   useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
 
   const toggleTimer = useCallback(() => {
-    isRunning ? pause() : start();
+    if (isRunning) pause(); else start();
   }, [isRunning, pause, start]);
 
   const openTaskModal = useCallback(() => setIsTaskModalVisible(true), []);
@@ -92,7 +91,7 @@ export const useHomeViewModel = () => {
       await TaskModel.insertTask(title, undefined, tagId);
       await loadData();
       closeCreateTaskModal();
-    } catch (error) {
+    } catch {
       Alert.alert('Erro', 'Não foi possível criar a tarefa.');
     }
   }, [loadData, closeCreateTaskModal]);

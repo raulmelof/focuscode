@@ -30,8 +30,8 @@ export class SyncService {
 
       await this.pushLocalChanges(user.uid);
       await this.pullRemoteChanges(user.uid);
-    } catch (error) {
-      console.error('[SyncService] Erro crítico na sincronização:', error);
+    } catch (_error) {
+      console.error('[SyncService] Erro crítico na sincronização:', _error);
     }
   }
 
@@ -162,8 +162,8 @@ export class SyncService {
           );
         }
       }
-    } catch (error) {
-      console.error('[SyncService] Erro ao baixar mudanças:', error);
+    } catch (_error) {
+      console.error('[SyncService] Erro ao baixar mudanças:', _error);
     }
   }
 }

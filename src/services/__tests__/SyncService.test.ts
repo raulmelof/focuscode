@@ -1,6 +1,6 @@
 import { SyncService } from '../SyncService';
 import { getDBConnection } from '../../data/database/database';
-import { setDoc, deleteDoc, getDocs, doc, collection } from 'firebase/firestore';
+import { setDoc, getDocs, doc } from 'firebase/firestore';
 
 jest.mock('expo-sqlite', () => ({
   openDatabaseAsync: jest.fn()

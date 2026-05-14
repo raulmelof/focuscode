@@ -1,4 +1,3 @@
-import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
 
 const mockOpenDatabaseAsync = jest.fn();
@@ -26,7 +25,7 @@ describe('Database', () => {
     };
     
     mockOpenDatabaseAsync.mockResolvedValue(mockDb);
-    databaseModule = require('../database');
+    databaseModule = jest.requireActual('../database');
   });
 
   it('deve inicializar o banco de dados e habilitar foreign keys', async () => {
