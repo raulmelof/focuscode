@@ -1,6 +1,14 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
 export const getDBConnection = async () => {
+  if (Platform.OS === 'web') {
+    return {
+      execAsync: async () => {},
+      getAllAsync: async () => [],
+      runAsync: async () => ({ lastInsertRowId: Math.floor(Math.random() * 1000) }),
+    } as any;
+  }
   return await SQLite.openDatabaseAsync('focuscode.db');
 };
 

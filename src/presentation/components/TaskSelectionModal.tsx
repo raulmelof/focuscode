@@ -1,17 +1,19 @@
 import React, { useRef } from 'react';
 import { Modal, View, Text, TouchableOpacity, FlatList, StyleSheet, Animated, PanResponder } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Task } from '../../utils/mockTasks';
+import { Task } from '../../types/Task';
+import { Tag } from '../../types/Tag';
 
 interface TaskSelectionModalProps {
   visible: boolean;
   onClose: () => void;
   onSelectTask: (task: Task) => void;
   tasks: Task[];
+  tags: Tag[];
   onCreateTask: () => void;
 }
 
-export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, onCreateTask }: TaskSelectionModalProps) => {
+export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, tags, onCreateTask }: TaskSelectionModalProps) => {
   const panY = useRef(new Animated.Value(0)).current;
 
   const panResponder = useRef(
@@ -48,7 +50,11 @@ export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, onCr
     >
       <View>
         <Text style={styles.taskTitle}>{item.title}</Text>
-        <Text style={styles.taskTag}>{item.tag}</Text>
+        {item.tagId ? (
+          <Text style={styles.taskTag}>{tags.find(t => t.id === item.tagId)?.name || 'Sem tag'}</Text>
+        ) : (
+          <Text style={styles.taskTag}>Sem tag</Text>
+        )}
       </View>
       <Feather name="chevron-right" size={24} color="#2A1128" opacity={0.5} />
     </TouchableOpacity>

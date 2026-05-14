@@ -10,25 +10,28 @@ import {
   Platform 
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Tag } from '../../types/Tag';
 
 interface CreateTaskModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (title: string, tag: string) => void;
+  onSave: (title: string, tagId?: number) => void;
+  tags: Tag[];
+  onManageTags: () => void;
 }
 
-export const CreateTaskModal = ({ visible, onClose, onSave }: CreateTaskModalProps) => {
+export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }: CreateTaskModalProps) => {
   const [title, setTitle] = useState('');
-  const [tag, setTag] = useState('');
+  const [selectedTagId, setSelectedTagId] = useState<number | undefined>(undefined);
 
   const handleSave = () => {
     if (title.trim() === '') {
       return;
     }
     
-    onSave(title, tag || 'Geral');
+    onSave(title, selectedTagId);
     setTitle('');
-    setTag('');
+    setSelectedTagId(undefined);
   };
 
   return (
@@ -62,14 +65,38 @@ export const CreateTaskModal = ({ visible, onClose, onSave }: CreateTaskModalPro
               autoFocus={true}
             />
 
-            <Text style={styles.label}>Tag (Categoria)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Faculdade"
-              placeholderTextColor="rgba(42, 17, 40, 0.4)"
-              value={tag}
-              onChangeText={setTag}
-            />
+            <View style={styles.tagsHeader}>
+              <Text style={styles.label}>Tag (Categoria)</Text>
+              <TouchableOpacity onPress={onManageTags}>
+                <Text style={styles.manageTagsText}>Gerenciar</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.tagsContainer}>
+              {tags.length === 0 ? (
+                <Text style={styles.noTagsText}>Nenhuma tag cadastrada.</Text>
+              ) : (
+                tags.map(t => (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={[
+                      styles.tagChip,
+                      selectedTagId === t.id && { backgroundColor: t.color || '#2A1128' }
+                    ]}
+                    onPress={() => setSelectedTagId(selectedTagId === t.id ? undefined : t.id)}
+                  >
+                    <Text 
+                      style={[
+                        styles.tagChipText,
+                        selectedTagId === t.id && styles.tagChipTextSelected
+                      ]}
+                    >
+                      {t.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
 
             <TouchableOpacity 
               style={[styles.saveButton, title.trim() === '' && styles.saveButtonDisabled]} 
@@ -144,6 +171,46 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  tagsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  manageTagsText: {
+    color: '#2A1128',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  noTagsText: {
+    color: 'rgba(42, 17, 40, 0.5)',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  tagChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: 'rgba(42, 17, 40, 0.1)',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  tagChipText: {
+    color: '#2A1128',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tagChipTextSelected: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
   }
 });

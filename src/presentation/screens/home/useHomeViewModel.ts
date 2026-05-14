@@ -1,21 +1,44 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation'; 
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
-import { Task, MOCK_TASKS } from '../../../utils/mockTasks'; 
+import { Task } from '../../../types/Task';
+import { Tag } from '../../../types/Tag';
+import { TaskModel } from '../../../data/models/TaskModel';
+import { TagModel } from '../../../data/models/TagModel';
+import { initDB } from '../../../data/database/database';
 import { useFlipToFocus } from '../../../hooks/useFlipToFocus';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const INITIAL_TIME = 1 * 60; 
 
-  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
+  const [isManageTagsModalVisible, setIsManageTagsModalVisible] = useState(false);
   const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
+
+  const loadData = async () => {
+    try {
+      await initDB();
+      const dbTasks = await TaskModel.getTasks();
+      const dbTags = await TagModel.getTags();
+      
+      setTasks(dbTasks.filter(t => !t.isCompleted));
+      setTags(dbTags);
+    } catch (error) {
+      console.error('Erro ao carregar dados do banco:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   // 1. Desestruturação direta do hook em uma única etapa
   const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
@@ -33,11 +56,15 @@ export const useHomeViewModel = () => {
   useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
 
 
-  const handleFocusEnd = useCallback(() => {
+  const handleFocusEnd = useCallback(async () => {
     if (selectedTask) {
-      setTasks(prevTasks => 
-        prevTasks.map(t => t.id === selectedTask.id ? { ...t, completed: true } : t)
-      );
+      try {
+        await TaskModel.updateTaskStatus(selectedTask.id, true);
+        setTasks(prevTasks => prevTasks.filter(t => t.id !== selectedTask.id));
+        setSelectedTask(null);
+      } catch (error) {
+        console.error('Erro ao atualizar status da tarefa:', error);
+      }
     }
     
     navigation.navigate('BreakScreen');
@@ -63,16 +90,33 @@ export const useHomeViewModel = () => {
   const openCreateTaskModal = () => setIsCreateTaskModalVisible(true);
   const closeCreateTaskModal = () => setIsCreateTaskModalVisible(false);
 
-  const addTask = (title: string, tag: string) => {
-    setTasks(prevTasks => [
-      ...prevTasks,
-      {
-        id: prevTasks.length ? Math.max(...prevTasks.map(task => task.id)) + 1 : 1,
-        title,
-        tag,
-      },
-    ]);
-    closeCreateTaskModal();
+  const openManageTagsModal = () => setIsManageTagsModalVisible(true);
+  const closeManageTagsModal = () => setIsManageTagsModalVisible(false);
+
+  const addTask = async (title: string, tagId?: number) => {
+    try {
+      await TaskModel.insertTask(title, undefined, tagId);
+      await loadData();
+      closeCreateTaskModal();
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error);
+      Alert.alert('Erro', 'Não foi possível criar a tarefa.');
+    }
+  };
+
+  const addTag = async (name: string, color: string) => {
+    await TagModel.insertTag(name, color);
+    await loadData();
+  };
+
+  const updateTag = async (id: number, name: string, color: string) => {
+    await TagModel.updateTag(id, name, color);
+    await loadData();
+  };
+
+  const deleteTag = async (id: number) => {
+    await TagModel.deleteTag(id);
+    await loadData();
   };
 
   const formattedTime = formatTime(timeLeft);
@@ -86,7 +130,7 @@ export const useHomeViewModel = () => {
     toggleTimer,
     progress,
     tasks,
-    setTasks,
+    tags,
     selectedTask,
     isTaskModalVisible,
     openTaskModal,
@@ -96,6 +140,12 @@ export const useHomeViewModel = () => {
     openCreateTaskModal,
     closeCreateTaskModal,
     addTask,
+    isManageTagsModalVisible,
+    openManageTagsModal,
+    closeManageTagsModal,
+    addTag,
+    updateTag,
+    deleteTag,
     isFlipEnabled,
     setIsFlipEnabled,
   };
