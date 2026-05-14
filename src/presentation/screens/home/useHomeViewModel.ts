@@ -7,7 +7,10 @@ import { formatTime } from '../../../utils/formatTime';
 import { useFlipToFocus } from '../../../hooks/useFlipToFocus';
 import { useAuth } from '../../../contexts/AuthContext';
 import { TaskModel } from '../../../data/models/TaskModel';
+import { TagModel } from '../../../data/models/TagModel';
 import { Task } from '../../../types/Task';
+import { Tag } from '../../../types/Tag';
+import { initDB } from '../../../data/database/database';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -16,96 +19,136 @@ export const useHomeViewModel = () => {
   const { user } = useAuth();
 
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
+  const [isManageTagsModalVisible, setIsManageTagsModalVisible] = useState(false);
   const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
 
-  // Carrega as tarefas do banco local filtrando pelo usuário logado.
-  // Quando user é null (logout), limpa o cache da UI automaticamente.
+  // Load tasks and tags from local DB filtered by logged user
+  // When user is null (logout), clear UI cache automatically
   const fetchTasks = useCallback(async () => {
     if (!user) {
       setTasks([]);
+      setTags([]);
       return;
     }
     try {
-      const localTasks = await TaskModel.getTasks(user.uid);
-      setTasks(localTasks);
+      await initDB();
+      const [localTasks, dbTags] = await Promise.all([
+        TaskModel.getTasks(user.uid),
+        TagModel.getTags(user.uid),
+      ]);
+      setTasks(localTasks.filter(t => !t.isCompleted));
+      setTags(dbTags);
     } catch (error) {
-      console.error('useHomeViewModel: Erro ao buscar tarefas:', error);
+      console.error('useHomeViewModel: Error fetching tasks:', error);
     }
   }, [user]);
 
-  // Re-executa sempre que o usuário mudar (login/logout)
+  // Re-run whenever user changes (login/logout)
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  const handleFocusEnd = useCallback(async () => {
+    if (selectedTask && user) {
+      try {
+        await TaskModel.updateTaskStatus(user.uid, selectedTask.id, true);
+        setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
+        setSelectedTask(null);
+      } catch (error) {
+        console.error('[ViewModel] Error completing task:', error);
+      }
+    }
+    navigation.navigate('BreakScreen');
+  }, [navigation, selectedTask, user]);
 
   const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
     onFocusEnd: () => handleFocusEnd(),
   });
 
-  // Sensores para ativar função quando celular é virado de cabeça para baixo ou pausar quando movido
+  // Sensors to trigger function when device is flipped or pause when moved
   const handlePauseFromSensor = useCallback(() => {
     pause();
-    Alert.alert('Foco Pausado', 'Você moveu o celular! O aparelho deve ficar com a tela virada para baixo.');
+    Alert.alert('Foco Pausado', 'O aparelho deve ficar com a tela virada para baixo.');
   }, [pause]);
 
   useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
 
-  const handleFocusEnd = useCallback(() => {
-    navigation.navigate('BreakScreen');
-    resetTimer();
-  }, [navigation, resetTimer]);
+  const toggleTimer = useCallback(() => {
+    if (isRunning) pause(); else start();
+  }, [isRunning, pause, start]);
 
-  const toggleTimer = () => {
-    if (isRunning) {
-      pause();
-    } else {
-      start();
-    }
-  };
-
-  const openTaskModal = () => setIsTaskModalVisible(true);
-  const closeTaskModal = () => setIsTaskModalVisible(false);
-
-  const selectTask = (task: Task) => {
+  const openTaskModal = useCallback(() => setIsTaskModalVisible(true), []);
+  const closeTaskModal = useCallback(() => setIsTaskModalVisible(false), []);
+  
+  const selectTask = useCallback((task: Task) => {
     setSelectedTask(task);
     closeTaskModal();
-  };
+  }, [closeTaskModal]);
 
-  const openCreateTaskModal = () => setIsCreateTaskModalVisible(true);
-  const closeCreateTaskModal = () => setIsCreateTaskModalVisible(false);
+  const openCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(true), []);
+  const closeCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(false), []);
 
-  // Persiste a nova tarefa no SQLite vinculada ao user.uid e recarrega a lista
-  const addTask = async (title: string, _tag: string) => {
+  const openManageTagsModal = useCallback(() => setIsManageTagsModalVisible(true), []);
+  const closeManageTagsModal = useCallback(() => setIsManageTagsModalVisible(false), []);
+
+  // Persist new task in SQLite linked to user.uid and reload list
+  const addTask = useCallback(async (title: string, tagId?: number) => {
     if (!user) {
-      Alert.alert('Erro', 'Nenhum usuário autenticado.');
+      Alert.alert('Erro', 'Nenhum usuario autenticado.');
       return;
     }
     try {
-      await TaskModel.insertTask(user.uid, title);
+      await TaskModel.insertTask(user.uid, title, undefined, tagId);
       await fetchTasks();
-      closeCreateTaskModal(); // Fecha o modal apenas em caso de sucesso
+      closeCreateTaskModal();
     } catch (error) {
-      console.error('useHomeViewModel: Erro ao criar tarefa:', error);
+      console.error('useHomeViewModel: Error creating task:', error);
       Alert.alert('Erro', 'Não foi possível salvar a tarefa.');
-      // Modal permanece aberto para o usuário tentar novamente
     }
-  };
+  }, [user, fetchTasks, closeCreateTaskModal]);
 
-  const formattedTime = formatTime(timeLeft);
-  const buttonTitle = isRunning ? 'PAUSAR FOCO' : 'INICIAR FOCO';
-  const progress = 1 - timeLeft / INITIAL_TIME;
+  const addTag = useCallback(async (name: string, color: string) => {
+    if (!user) return;
+    try {
+      await TagModel.insertTag(user.uid, name, color);
+      await fetchTasks();
+    } catch (error) {
+      console.error('[ViewModel] Error adding tag:', error);
+    }
+  }, [user, fetchTasks]);
+
+  const updateTag = useCallback(async (id: number, name: string, color: string) => {
+    try {
+      await TagModel.updateTag(id, name, color);
+      await fetchTasks();
+    } catch (error) {
+      console.error('[ViewModel] Error updating tag:', error);
+    }
+  }, [fetchTasks]);
+
+  const deleteTag = useCallback(async (id: number) => {
+    try {
+      await TagModel.deleteTag(id);
+      await fetchTasks();
+    } catch (error) {
+      console.error('[ViewModel] Error deleting tag:', error);
+    }
+  }, [fetchTasks]);
 
   return {
-    formattedTime,
+    formattedTime: formatTime(timeLeft),
     isRunning,
-    buttonTitle,
+    buttonTitle: isRunning ? 'PAUSAR FOCO' : 'INICIAR FOCO',
     toggleTimer,
-    progress,
+    progress: 1 - timeLeft / INITIAL_TIME,
     tasks,
+    tags,
     selectedTask,
     isTaskModalVisible,
     openTaskModal,
@@ -115,6 +158,12 @@ export const useHomeViewModel = () => {
     openCreateTaskModal,
     closeCreateTaskModal,
     addTask,
+    isManageTagsModalVisible,
+    openManageTagsModal,
+    closeManageTagsModal,
+    addTag,
+    updateTag,
+    deleteTag,
     isFlipEnabled,
     setIsFlipEnabled,
   };

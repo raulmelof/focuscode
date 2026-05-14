@@ -1,9 +1,11 @@
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useHomeViewModel } from '../useHomeViewModel';
 import { TaskModel } from '../../../../data/models/TaskModel';
+import { TagModel } from '../../../../data/models/TagModel';
 import { Task } from '../../../../types/Task';
 import { useAuth } from '../../../../contexts/AuthContext';
 
+// Mock Navigation
 const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
@@ -11,6 +13,7 @@ jest.mock('@react-navigation/native', () => ({
   }),
 }));
 
+// Mock Sensors
 jest.mock('expo-sensors', () => ({
   Accelerometer: {
     setUpdateInterval: jest.fn(),
@@ -19,34 +22,50 @@ jest.mock('expo-sensors', () => ({
   },
 }));
 
-// Mock do AuthContext para retornar um usuário de teste
+// Mock AuthContext to return a test user
 const mockUser = { uid: 'test-user-uid-123' };
 jest.mock('../../../../contexts/AuthContext', () => ({
   useAuth: jest.fn(() => ({ user: mockUser, isLoading: false })),
 }));
 
-// Mock do TaskModel para não tocar no banco real
+// Mock TaskModel and TagModel
 jest.mock('../../../../data/models/TaskModel', () => ({
   TaskModel: {
     getTasks: jest.fn(),
     insertTask: jest.fn(),
+    updateTaskStatus: jest.fn(),
   },
+}));
+
+jest.mock('../../../../data/models/TagModel', () => ({
+  TagModel: {
+    getTags: jest.fn(),
+    insertTag: jest.fn(),
+    updateTag: jest.fn(),
+    deleteTag: jest.fn(),
+  },
+}));
+
+jest.mock('../../../../data/database/database', () => ({
+  initDB: jest.fn().mockResolvedValue(true),
+  getDBConnection: jest.fn().mockResolvedValue({}),
 }));
 
 jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
 
 const MOCK_TASKS: Task[] = [
   { id: 1, title: 'Estudar React', isCompleted: false },
-  { id: 2, title: 'Fazer exercícios', isCompleted: false },
+  { id: 2, title: 'Fazer exercicios', isCompleted: false },
 ];
 
 describe('useHomeViewModel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Restaura o useAuth para retornar o usuário logado a cada teste
+    // Restore useAuth to return the logged user for each test
     (useAuth as jest.Mock).mockReturnValue({ user: mockUser, isLoading: false });
-    // Por padrão, getTasks retorna a lista mock
+    // Default mock returns
     (TaskModel.getTasks as jest.Mock).mockResolvedValue(MOCK_TASKS);
+    (TagModel.getTags as jest.Mock).mockResolvedValue([]);
     (TaskModel.insertTask as jest.Mock).mockResolvedValue(3);
   });
 
@@ -70,7 +89,6 @@ describe('useHomeViewModel', () => {
   });
 
   it('should clear tasks when user is null (logout cache cleanup)', async () => {
-    // Simula logout: user = null (usa o import já declarado no topo)
     (useAuth as jest.Mock).mockReturnValue({ user: null, isLoading: false });
 
     const { result } = renderHook(() => useHomeViewModel());
@@ -155,7 +173,7 @@ describe('useHomeViewModel', () => {
       ...MOCK_TASKS,
       { id: 3, title: 'Nova Tarefa Teste', isCompleted: false },
     ];
-    // Na segunda chamada (após insertTask), retorna a lista atualizada
+    // On second call (after insertTask), return updated list
     (TaskModel.getTasks as jest.Mock)
       .mockResolvedValueOnce(MOCK_TASKS)
       .mockResolvedValueOnce(updatedTasks);
@@ -165,16 +183,18 @@ describe('useHomeViewModel', () => {
     await waitFor(() => expect(result.current.tasks).toHaveLength(2));
 
     await act(async () => {
-      await result.current.addTask('Nova Tarefa Teste', 'Tag Teste');
+      await result.current.addTask('Nova Tarefa Teste', 1);
     });
 
-    // Deve ter chamado insertTask com o userId correto
+    // Should call insertTask with correct userId and tagId in correct position
     expect(TaskModel.insertTask).toHaveBeenCalledWith(
       'test-user-uid-123',
-      'Nova Tarefa Teste'
+      'Nova Tarefa Teste',
+      undefined,
+      1
     );
 
-    // A lista deve ter sido recarregada do banco
+    // List should reload from DB
     await waitFor(() => {
       expect(result.current.tasks).toHaveLength(3);
     });

@@ -9,8 +9,21 @@ export interface DatabaseConnection {
 }
 
 const createWebDBAdapter = (): DatabaseConnection => {
-  const tables: Record<string, any[]> = {};
+  const STORAGE_KEY = 'focuscode_web_db';
+  const savedData = Platform.OS === 'web' ? localStorage.getItem(STORAGE_KEY) : null;
+  const tables: Record<string, any[]> = savedData ? JSON.parse(savedData) : {};
   let autoIncrementIds: Record<string, number> = {};
+
+  Object.keys(tables).forEach(tableName => {
+    const maxId = tables[tableName].reduce((max, item) => Math.max(max, item.id || 0), 0);
+    autoIncrementIds[tableName] = maxId + 1;
+  });
+
+  const persist = () => {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tables));
+    }
+  };
 
   return {
     execAsync: async (sql: string) => {
@@ -49,6 +62,7 @@ const createWebDBAdapter = (): DatabaseConnection => {
           if (row.updatedAt === undefined) row.updatedAt = Date.now();
           if (row.isCompleted === undefined) row.isCompleted = 0;
           tables[tableName].push(row);
+          persist();
           return { lastInsertRowId: id };
         }
       }
@@ -60,8 +74,18 @@ const createWebDBAdapter = (): DatabaseConnection => {
           const idParam = params[params.length - 1];
           const row = tables[tableName].find(r => r.id === Number(idParam) || r.firebaseId === idParam);
           if (row) {
-            if (sql.includes('firebaseId = ?')) row.firebaseId = params[0];
+            if (sql.includes('firebaseId = ?')) {
+              // Encontra a posição do firebaseId nos params (geralmente o primeiro em UPDATE table SET firebaseId = ? WHERE id = ?)
+              row.firebaseId = params[0];
+            }
             if (sql.includes('isCompleted = ?')) row.isCompleted = params[0];
+            if (sql.includes('isDeleted = ?')) row.isDeleted = params[0];
+            if (sql.includes('updatedAt = ?')) {
+              // Se tiver isDeleted, updatedAt costuma ser o segundo param. Se for update normal de tag, é o terceiro.
+              const updatedAtIdx = sql.includes('isDeleted') ? 1 : (sql.includes('name') ? 2 : 1);
+              row.updatedAt = params[updatedAtIdx] || Date.now();
+            }
+            persist();
           }
         }
         return { changes: 1, lastInsertRowId: 0 };
@@ -73,6 +97,7 @@ const createWebDBAdapter = (): DatabaseConnection => {
         if (tableName && tables[tableName]) {
           const idParam = params[0];
           tables[tableName] = tables[tableName].filter(r => r.id !== Number(idParam));
+          persist();
         }
         return { changes: 1, lastInsertRowId: 0 };
       }
@@ -163,7 +188,7 @@ export const initDB = async () => {
         );
       `);
 
-      const alterTables = [
+      const alterQueries = [
         "ALTER TABLE tags ADD COLUMN firebaseId TEXT;",
         "ALTER TABLE tags ADD COLUMN userId TEXT;",
         "ALTER TABLE tags ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000);",
@@ -174,7 +199,7 @@ export const initDB = async () => {
         "ALTER TABLE tasks ADD COLUMN isDeleted INTEGER DEFAULT 0;"
       ];
 
-      for (const query of alterTables) {
+      for (const query of alterQueries) {
         try { await db.execAsync(query); } catch { }
       }
     } catch (error) {

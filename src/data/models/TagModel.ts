@@ -24,4 +24,13 @@ export class TagModel {
     // Soft delete para sincronização futura
     await db.runAsync('UPDATE tags SET isDeleted = 1, updatedAt = ? WHERE id = ?', [now, id]);
   }
+
+  static async updateTag(id: number, name: string, color: string): Promise<void> {
+    const db = await getDBConnection();
+    const now = Date.now();
+    await db.runAsync(
+      'UPDATE tags SET name = ?, color = ?, updatedAt = ? WHERE id = ?',
+      [name, color, now, id]
+    );
+  }
 }
