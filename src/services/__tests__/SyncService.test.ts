@@ -1,5 +1,5 @@
 import { SyncService } from '../SyncService';
-import { getDBConnection } from '../../data/database/database';
+import { getDBConnection, initDB } from '../../data/database/database';
 import { setDoc, getDocs, doc } from 'firebase/firestore';
 
 jest.mock('expo-sqlite', () => ({
@@ -26,30 +26,33 @@ jest.mock('firebase/firestore', () => {
   };
 });
 
+const TEST_USER_ID = 'test-user-id';
+
 describe('SyncService', () => {
   let mockDb: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     mockDb = {
-      getAllAsync: jest.fn(),
-      runAsync: jest.fn(),
-      getFirstAsync: jest.fn()
+      getAllAsync: jest.fn().mockResolvedValue([]),
+      runAsync: jest.fn().mockResolvedValue({}),
+      getFirstAsync: jest.fn().mockResolvedValue(null)
     };
     (getDBConnection as jest.Mock).mockResolvedValue(mockDb);
+    (initDB as jest.Mock).mockResolvedValue(true);
   });
 
-  it('deve realizar push de novas tasks e tags', async () => {
+  it('deve realizar push de novas tasks e tags com userId', async () => {
     mockDb.getAllAsync.mockImplementation((queryStr: string) => {
       if (queryStr.includes('tasks')) {
         return Promise.resolve([
-          { id: 1, title: 'Task 1', firebaseId: null, updatedAt: 1000, isDeleted: 0 }
+          { id: 1, title: 'Task 1', firebaseId: null, updatedAt: 1000, isDeleted: 0, userId: TEST_USER_ID }
         ]);
       }
       if (queryStr.includes('tags')) {
         return Promise.resolve([
-          { id: 10, name: 'Tag 1', color: 'red', firebaseId: null, updatedAt: 1000, isDeleted: 0 }
+          { id: 10, name: 'Tag 1', color: 'red', firebaseId: null, updatedAt: 1000, isDeleted: 0, userId: TEST_USER_ID }
         ]);
       }
       return Promise.resolve([]);
@@ -60,14 +63,13 @@ describe('SyncService', () => {
 
     await SyncService.sync();
 
+    expect(initDB).toHaveBeenCalled();
     expect(mockDb.runAsync).toHaveBeenCalledWith('UPDATE tasks SET firebaseId = ? WHERE id = ?', ['new-id', 1]);
     expect(mockDb.runAsync).toHaveBeenCalledWith('UPDATE tags SET firebaseId = ? WHERE id = ?', ['new-id', 10]);
     expect(setDoc).toHaveBeenCalledTimes(2);
   });
 
-  it('deve realizar pull de tasks e tags remotas', async () => {
-    mockDb.getAllAsync.mockResolvedValue([]);
-    
+  it('deve realizar pull de tasks e tags remotas e salvar com userId', async () => {
     (getDocs as jest.Mock).mockImplementation((q) => {
       if (q === 'tags') {
         return Promise.resolve({
@@ -76,29 +78,53 @@ describe('SyncService', () => {
       }
       if (q === 'tasks') {
         return Promise.resolve({
-          docs: [{ id: 'remote-task-1', data: () => ({ title: 'Remote Task', updatedAt: 2000 }) }]
+          docs: [{ id: 'remote-task-1', data: () => ({ title: 'Remote Task', description: null, isCompleted: false, tagId: null, updatedAt: 2000 }) }]
         });
       }
       return Promise.resolve({ docs: [] });
     });
 
-    mockDb.getFirstAsync.mockResolvedValue(null);
-
     await SyncService.sync();
 
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO tags'),
-      expect.arrayContaining(['Remote Tag', 'blue', 'remote-tag-1'])
+      expect.arrayContaining(['Remote Tag', 'blue', 'remote-tag-1', TEST_USER_ID])
     );
     expect(mockDb.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO tasks'),
-      expect.arrayContaining(['Remote Task', 'remote-task-1'])
+      expect.arrayContaining(['Remote Task', 'remote-task-1', TEST_USER_ID])
+    );
+  });
+
+  it('deve mapear corretamente o tagId remoto para o id local durante o pull', async () => {
+    (getDocs as jest.Mock).mockImplementation((q) => {
+      if (q === 'tags') {
+        return Promise.resolve({
+          docs: [{ id: 'remote-tag-abc', data: () => ({ name: 'Tag Mapeada', color: 'green', updatedAt: 2000 }) }]
+        });
+      }
+      if (q === 'tasks') {
+        return Promise.resolve({
+          docs: [{ id: 'task-with-tag', data: () => ({ title: 'Task com Tag', tagId: 'remote-tag-abc', updatedAt: 2000 }) }]
+        });
+      }
+      return Promise.resolve({ docs: [] });
+    });
+
+    mockDb.getFirstAsync.mockImplementation((sql: string) => {
+      if (sql.includes('FROM tags')) return Promise.resolve({ id: 55 });
+      return Promise.resolve(null);
+    });
+
+    await SyncService.sync();
+
+    expect(mockDb.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO tasks'),
+      expect.arrayContaining(['Task com Tag', 55, 'task-with-tag'])
     );
   });
 
   it('deve respeitar updatedAt para não sobrescrever dados mais novos localmente', async () => {
-    mockDb.getAllAsync.mockResolvedValue([]);
-    
     (getDocs as jest.Mock).mockResolvedValue({
       docs: [{ id: 'remote-id', data: () => ({ name: 'Old Remote', updatedAt: 1000 }) }]
     });

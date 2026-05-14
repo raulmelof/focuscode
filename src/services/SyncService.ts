@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db as firestoreDb, auth } from './firebase';
-import { getDBConnection } from '../data/database/database';
+import { getDBConnection, initDB } from '../data/database/database';
 
 interface LocalTask {
   id: number;
@@ -11,6 +11,7 @@ interface LocalTask {
   firebaseId: string | null;
   updatedAt: number;
   isDeleted: number;
+  userId: string | null;
 }
 
 interface LocalTag {
@@ -20,6 +21,7 @@ interface LocalTag {
   firebaseId: string | null;
   updatedAt: number;
   isDeleted: number;
+  userId: string | null;
 }
 
 export class SyncService {
@@ -28,6 +30,7 @@ export class SyncService {
       const user = auth.currentUser;
       if (!user) return;
 
+      await initDB();
       await this.pushLocalChanges(user.uid);
       await this.pullRemoteChanges(user.uid);
     } catch (_error) {
@@ -39,7 +42,7 @@ export class SyncService {
     const db = await getDBConnection();
 
     // Sincronização de Tags (Individual para ser resiliente a erros de permissão)
-    const localTags = await db.getAllAsync<LocalTag>('SELECT * FROM tags');
+    const localTags = await db.getAllAsync<LocalTag>('SELECT * FROM tags WHERE userId = ?', [userId]);
     for (const tag of localTags) {
       try {
         let docRef;
@@ -52,8 +55,6 @@ export class SyncService {
 
         if (tag.isDeleted === 1) {
           await deleteDoc(docRef);
-          // Não removemos do SQLite para evitar erro de Foreign Key se houver tarefas vinculadas
-          // Apenas mantemos como isDeleted = 1 e limpamos o firebaseId para marcar como 'sincronizado'
           await db.runAsync('UPDATE tags SET firebaseId = NULL WHERE id = ?', [tag.id]);
         } else {
           await setDoc(docRef, {
@@ -72,8 +73,8 @@ export class SyncService {
       }
     }
 
-    // Sincronização de Tarefas
-    const localTasks = await db.getAllAsync<LocalTask>('SELECT * FROM tasks');
+    // Sincronização de Tarefas (filtradas pelo userId)
+    const localTasks = await db.getAllAsync<LocalTask>('SELECT * FROM tasks WHERE userId = ?', [userId]);
     for (const task of localTasks) {
       try {
         let docRef;
@@ -111,20 +112,20 @@ export class SyncService {
     const db = await getDBConnection();
 
     try {
-      // Puxar Tags
+      // 1. Pull Tags
       const tagsSnapshot = await getDocs(query(collection(firestoreDb, 'tags'), where('userId', '==', userId)));
       for (const docSnap of tagsSnapshot.docs) {
         const data = docSnap.data();
         const firebaseId = docSnap.id;
         const existingTag = await db.getFirstAsync<LocalTag>(
-          'SELECT id, updatedAt FROM tags WHERE firebaseId = ?', 
+          'SELECT id, updatedAt FROM tags WHERE firebaseId = ?',
           [firebaseId]
         );
 
         if (!existingTag) {
           await db.runAsync(
-            'INSERT INTO tags (name, color, firebaseId, updatedAt) VALUES (?, ?, ?, ?)',
-            [data.name, data.color, firebaseId, data.updatedAt || Date.now()]
+            'INSERT INTO tags (name, color, firebaseId, updatedAt, userId) VALUES (?, ?, ?, ?, ?)',
+            [data.name, data.color, firebaseId, data.updatedAt || Date.now(), userId]
           );
         } else if (data.updatedAt && data.updatedAt > existingTag.updatedAt) {
           await db.runAsync(
@@ -134,13 +135,13 @@ export class SyncService {
         }
       }
 
-      // Puxar Tarefas
+      // 2. Pull Tarefas
       const tasksSnapshot = await getDocs(query(collection(firestoreDb, 'tasks'), where('userId', '==', userId)));
       for (const docSnap of tasksSnapshot.docs) {
         const data = docSnap.data();
         const firebaseId = docSnap.id;
         const existingTask = await db.getFirstAsync<LocalTask>(
-          'SELECT id, updatedAt FROM tasks WHERE firebaseId = ?', 
+          'SELECT id, updatedAt FROM tasks WHERE firebaseId = ?',
           [firebaseId]
         );
 
@@ -152,8 +153,8 @@ export class SyncService {
 
         if (!existingTask) {
           await db.runAsync(
-            'INSERT INTO tasks (title, description, isCompleted, tagId, firebaseId, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
-            [data.title, data.description || null, data.isCompleted ? 1 : 0, localTagId, firebaseId, data.updatedAt || Date.now()]
+            'INSERT INTO tasks (title, description, isCompleted, tagId, firebaseId, updatedAt, userId) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [data.title, data.description || null, data.isCompleted ? 1 : 0, localTagId, firebaseId, data.updatedAt || Date.now(), userId]
           );
         } else if (data.updatedAt && data.updatedAt > existingTask.updatedAt) {
           await db.runAsync(

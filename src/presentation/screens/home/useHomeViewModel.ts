@@ -1,19 +1,22 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { AppNavigationProp } from '../../../types/navigation'; 
+import { AppNavigationProp } from '../../../types/navigation';
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
-import { Task } from '../../../types/Task';
-import { Tag } from '../../../types/Tag';
+import { useFlipToFocus } from '../../../hooks/useFlipToFocus';
+import { useAuth } from '../../../contexts/AuthContext';
 import { TaskModel } from '../../../data/models/TaskModel';
 import { TagModel } from '../../../data/models/TagModel';
+import { Task } from '../../../types/Task';
+import { Tag } from '../../../types/Tag';
 import { initDB } from '../../../data/database/database';
-import { useFlipToFocus } from '../../../hooks/useFlipToFocus';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const INITIAL_TIME = 1 * 60; // 1 minuto para testes
+  const INITIAL_TIME = 1 * 60;
+
+  const { user } = useAuth();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -24,43 +27,51 @@ export const useHomeViewModel = () => {
   const [isManageTagsModalVisible, setIsManageTagsModalVisible] = useState(false);
   const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
 
-  const loadData = useCallback(async () => {
+  // Load tasks and tags from local DB filtered by logged user
+  // When user is null (logout), clear UI cache automatically
+  const fetchTasks = useCallback(async () => {
+    if (!user) {
+      setTasks([]);
+      setTags([]);
+      return;
+    }
     try {
       await initDB();
-      const [dbTasks, dbTags] = await Promise.all([
-        TaskModel.getTasks(),
-        TagModel.getTags()
+      const [localTasks, dbTags] = await Promise.all([
+        TaskModel.getTasks(user.uid),
+        TagModel.getTags(user.uid),
       ]);
-      
-      setTasks(dbTasks.filter(t => !t.isCompleted));
+      setTasks(localTasks.filter(t => !t.isCompleted));
       setTags(dbTags);
     } catch (error) {
-      console.error('[ViewModel] Erro ao carregar dados:', error);
+      console.error('useHomeViewModel: Error fetching tasks:', error);
     }
-  }, []);
+  }, [user]);
 
+  // Re-run whenever user changes (login/logout)
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    fetchTasks();
+  }, [fetchTasks]);
 
   const handleFocusEnd = useCallback(async () => {
-    if (selectedTask) {
+    if (selectedTask && user) {
       try {
-        await TaskModel.updateTaskStatus(selectedTask.id, true);
+        await TaskModel.updateTaskStatus(user.uid, selectedTask.id, true);
         setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
         setSelectedTask(null);
       } catch (error) {
-        console.error('[ViewModel] Erro ao concluir tarefa:', error);
+        console.error('[ViewModel] Error completing task:', error);
       }
     }
     navigation.navigate('BreakScreen');
-  }, [navigation, selectedTask]);
+  }, [navigation, selectedTask, user]);
 
   const { timeLeft, isRunning, start, pause } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
-    onFocusEnd: handleFocusEnd, 
+    onFocusEnd: () => handleFocusEnd(),
   });
 
+  // Sensors to trigger function when device is flipped or pause when moved
   const handlePauseFromSensor = useCallback(() => {
     pause();
     Alert.alert('Foco Pausado', 'O aparelho deve ficar com a tela virada para baixo.');
@@ -86,49 +97,58 @@ export const useHomeViewModel = () => {
   const openManageTagsModal = useCallback(() => setIsManageTagsModalVisible(true), []);
   const closeManageTagsModal = useCallback(() => setIsManageTagsModalVisible(false), []);
 
+  // Persist new task in SQLite linked to user.uid and reload list
   const addTask = useCallback(async (title: string, tagId?: number) => {
-    try {
-      await TaskModel.insertTask(title, undefined, tagId);
-      await loadData();
-      closeCreateTaskModal();
-    } catch {
-      Alert.alert('Erro', 'Não foi possível criar a tarefa.');
+    if (!user) {
+      Alert.alert('Erro', 'Nenhum usuario autenticado.');
+      return;
     }
-  }, [loadData, closeCreateTaskModal]);
+    try {
+      await TaskModel.insertTask(user.uid, title, undefined, tagId);
+      await fetchTasks();
+      closeCreateTaskModal();
+    } catch (error) {
+      console.error('useHomeViewModel: Error creating task:', error);
+      Alert.alert('Erro', 'Não foi possível salvar a tarefa.');
+    }
+  }, [user, fetchTasks, closeCreateTaskModal]);
 
   const addTag = useCallback(async (name: string, color: string) => {
+    if (!user) return;
     try {
-      await TagModel.insertTag(name, color);
-      await loadData();
+      await TagModel.insertTag(user.uid, name, color);
+      await fetchTasks();
     } catch (error) {
-      console.error('[ViewModel] Erro ao adicionar tag:', error);
+      console.error('[ViewModel] Error adding tag:', error);
     }
-  }, [loadData]);
+  }, [user, fetchTasks]);
 
   const updateTag = useCallback(async (id: number, name: string, color: string) => {
+    if (!user) return;
     try {
-      await TagModel.updateTag(id, name, color);
-      await loadData();
+      await TagModel.updateTag(user.uid, id, name, color);
+      await fetchTasks();
     } catch (error) {
-      console.error('[ViewModel] Erro ao atualizar tag:', error);
+      console.error('[ViewModel] Error updating tag:', error);
     }
-  }, [loadData]);
+  }, [user, fetchTasks]);
 
   const deleteTag = useCallback(async (id: number) => {
+    if (!user) return;
     try {
-      await TagModel.deleteTag(id);
-      await loadData();
+      await TagModel.deleteTag(user.uid, id);
+      await fetchTasks();
     } catch (error) {
-      console.error('[ViewModel] Erro ao deletar tag:', error);
+      console.error('[ViewModel] Error deleting tag:', error);
     }
-  }, [loadData]);
+  }, [user, fetchTasks]);
 
   return {
     formattedTime: formatTime(timeLeft),
     isRunning,
-    buttonTitle: isRunning ? "PAUSAR FOCO" : "INICIAR FOCO",
+    buttonTitle: isRunning ? 'PAUSAR FOCO' : 'INICIAR FOCO',
     toggleTimer,
-    progress: 1 - (timeLeft / INITIAL_TIME),
+    progress: 1 - timeLeft / INITIAL_TIME,
     tasks,
     tags,
     selectedTask,

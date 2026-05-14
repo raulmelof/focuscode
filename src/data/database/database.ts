@@ -114,6 +114,12 @@ const createWebDBAdapter = (): DatabaseConnection => {
       if (sql.includes('isDeleted = 0')) {
         results = results.filter(r => r.isDeleted === 0);
       }
+      // Aplica filtro de userId se presente na query
+      if (sql.includes('userId = ?')) {
+        const userIdParamIndex = params.length - 1;
+        const filterUserId = params[userIdParamIndex];
+        results = results.filter(r => r.userId === filterUserId);
+      }
       return results as T[];
     },
 
@@ -164,6 +170,7 @@ export const initDB = async () => {
           name TEXT NOT NULL,
           color TEXT NOT NULL,
           firebaseId TEXT,
+          userId TEXT,
           updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
           isDeleted INTEGER DEFAULT 0
         );
@@ -174,6 +181,7 @@ export const initDB = async () => {
           isCompleted INTEGER DEFAULT 0,
           tagId INTEGER,
           firebaseId TEXT,
+          userId TEXT,
           updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
           isDeleted INTEGER DEFAULT 0,
           FOREIGN KEY (tagId) REFERENCES tags (id)
@@ -182,9 +190,11 @@ export const initDB = async () => {
 
       const alterQueries = [
         "ALTER TABLE tags ADD COLUMN firebaseId TEXT;",
+        "ALTER TABLE tags ADD COLUMN userId TEXT;",
         "ALTER TABLE tags ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000);",
         "ALTER TABLE tags ADD COLUMN isDeleted INTEGER DEFAULT 0;",
         "ALTER TABLE tasks ADD COLUMN firebaseId TEXT;",
+        "ALTER TABLE tasks ADD COLUMN userId TEXT;",
         "ALTER TABLE tasks ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000);",
         "ALTER TABLE tasks ADD COLUMN isDeleted INTEGER DEFAULT 0;"
       ];

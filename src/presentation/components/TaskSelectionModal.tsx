@@ -23,7 +23,7 @@ export const TaskSelectionModal = ({
 }: TaskSelectionModalProps) => {
   const panY = useRef(new Animated.Value(0)).current;
 
-  // Otimização: Mapa de tags para busca instantânea (O(1))
+  // Optimization: Tag map for instant lookup (O(1))
   const tagsMap = useMemo(() => {
     return tags.reduce((acc, tag) => {
       acc[tag.id] = tag.name;
