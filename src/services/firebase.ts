@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth, signInAnonymously } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 
 // As variáveis de ambiente começam com EXPO_PUBLIC_ para serem lidas nativamente pelo Expo
 const firebaseConfig = {
@@ -19,16 +19,5 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Função auxiliar para autenticar anonimamente
-export const signInAnonymouslyToFirebase = async () => {
-  try {
-    const userCredential = await signInAnonymously(auth);
-    console.log("Usuário logado anonimamente com UID:", userCredential.user.uid);
-    return userCredential.user;
-  } catch (error) {
-    console.error("Erro ao autenticar anonimamente:", error);
-    throw error;
-  }
-};
-
 export default app;
+

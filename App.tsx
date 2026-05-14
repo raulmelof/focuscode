@@ -6,7 +6,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppStack } from './src/presentation/routes/AppStack';
 import { initDB } from './src/data/database/database';
 import './src/services/firebase'; // Inicializa Firebase
-import { SyncService } from './src/services/SyncService';
 import { AuthProvider } from './src/contexts/AuthContext';
 
 export default function App() {
@@ -16,17 +15,18 @@ export default function App() {
     initDB()
       .then(async () => {
         setIsDBReady(true);
-        
-        // Roda a sincronização em background sem bloquear a UI
-        SyncService.sync().catch(console.error);
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error('Erro ao inicializar o banco de dados:', err);
+        // Libera a interface mesmo se o banco falhar (ex: Web com erro de SecurityError do OPFS)
+        setIsDBReady(true); 
+      });
   }, []);
 
   if (!isDBReady) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121214' }}>
+        <ActivityIndicator size="large" color="#04d361" />
       </View>
     );
   }

@@ -2,12 +2,13 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  User,
 } from 'firebase/auth';
 import { auth } from './firebase';
 
 export interface AuthResponse {
   success: boolean;
-  user?: any;
+  user?: User;
   error?: string;
 }
 
