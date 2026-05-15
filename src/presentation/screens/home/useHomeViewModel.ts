@@ -24,6 +24,10 @@ export const useHomeViewModel = () => {
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
   const [isManageTagsModalVisible, setIsManageTagsModalVisible] = useState(false);
+  const [isTaskDetailsModalVisible, setIsTaskDetailsModalVisible] = useState(false);
+  const [isCameraModalVisible, setIsCameraModalVisible] = useState(false);
+  const [isFocusSummaryModalVisible, setIsFocusSummaryModalVisible] = useState(false);
+  const [lastCompletedTask, setLastCompletedTask] = useState<Task | null>(null);
   const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
 
   // Load tasks and tags from local DB filtered by logged user
@@ -55,15 +59,29 @@ export const useHomeViewModel = () => {
   const handleFocusEnd = useCallback(async () => {
     if (selectedTask && user) {
       try {
+        const completedTask = { ...selectedTask, isCompleted: true };
+        setLastCompletedTask(completedTask);
         await TaskModel.updateTaskStatus(user.uid, selectedTask.id, true);
+        
+        // Remove da lista de ativos
         setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
         setSelectedTask(null);
+        
+        // Em vez de navegar direto, mostra o modal de resumo
+        setIsFocusSummaryModalVisible(true);
       } catch (error) {
         console.error('[ViewModel] Error completing task:', error);
+        navigation.navigate('BreakScreen');
       }
+    } else {
+      navigation.navigate('BreakScreen');
     }
-    navigation.navigate('BreakScreen');
   }, [navigation, selectedTask, user]);
+
+  const goToBreak = useCallback(() => {
+    setIsFocusSummaryModalVisible(false);
+    navigation.navigate('BreakScreen');
+  }, [navigation]);
 
   const { timeLeft, isRunning, start, pause } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
@@ -95,6 +113,37 @@ export const useHomeViewModel = () => {
 
   const openManageTagsModal = useCallback(() => setIsManageTagsModalVisible(true), []);
   const closeManageTagsModal = useCallback(() => setIsManageTagsModalVisible(false), []);
+
+  const openTaskDetailsModal = useCallback(() => setIsTaskDetailsModalVisible(true), []);
+  const closeTaskDetailsModal = useCallback(() => setIsTaskDetailsModalVisible(false), []);
+
+  const openCameraModal = useCallback(() => setIsCameraModalVisible(true), []);
+  const closeCameraModal = useCallback(() => setIsCameraModalVisible(false), []);
+
+  const handleCaptureSummary = useCallback(async (uri: string) => {
+    const taskToUpdate = isFocusSummaryModalVisible ? lastCompletedTask : selectedTask;
+    
+    if (!taskToUpdate || !user || !taskToUpdate.id) {
+      console.error('[ViewModel] Missing data for summary update');
+      return;
+    }
+    
+    try {
+      await TaskModel.updateTaskSummary(user.uid, taskToUpdate.id, uri);
+      
+      const updatedTask = { ...taskToUpdate, summaryImageUri: uri };
+      
+      if (isFocusSummaryModalVisible) {
+        setLastCompletedTask(updatedTask);
+      } else {
+        setSelectedTask(updatedTask);
+        setTasks(prev => prev.map(t => t.id === taskToUpdate.id ? updatedTask : t));
+      }
+    } catch (error) {
+      console.error('[ViewModel] Error updating task summary:', error);
+      Alert.alert('Erro', 'Não foi possível salvar a imagem.');
+    }
+  }, [selectedTask, lastCompletedTask, user, isFocusSummaryModalVisible]);
 
   // Persist new task in SQLite linked to user.uid and reload list
   const addTask = useCallback(async (title: string, tagId?: number) => {
@@ -142,6 +191,20 @@ export const useHomeViewModel = () => {
     }
   }, [user, fetchTasks]);
 
+  const deleteTask = useCallback(async (id: number) => {
+    if (!user) return;
+    try {
+      await TaskModel.deleteTask(user.uid, id);
+      await fetchTasks();
+      if (selectedTask?.id === id) {
+        setSelectedTask(null);
+      }
+    } catch (error) {
+      console.error('[ViewModel] Error deleting task:', error);
+      Alert.alert('Erro', 'Não foi possível excluir a tarefa.');
+    }
+  }, [user, fetchTasks, selectedTask]);
+
   return {
     formattedTime: formatTime(timeLeft),
     isRunning,
@@ -165,7 +228,19 @@ export const useHomeViewModel = () => {
     addTag,
     updateTag,
     deleteTag,
+    deleteTask,
+    isTaskDetailsModalVisible,
+    openTaskDetailsModal,
+    closeTaskDetailsModal,
+    isCameraModalVisible,
+    openCameraModal,
+    closeCameraModal,
+    handleCaptureSummary,
+    isFocusSummaryModalVisible,
+    lastCompletedTask,
+    goToBreak,
     isFlipEnabled,
     setIsFlipEnabled,
   };
-};
+};
+

@@ -12,6 +12,7 @@ interface TaskSelectionModalProps {
   tasks: Task[];
   tags: Tag[];
   onCreateTask: () => void;
+  onDeleteTask: (id: number) => void;
 }
 
 export const TaskSelectionModal = ({ 
@@ -21,6 +22,7 @@ export const TaskSelectionModal = ({
   tasks, 
   tags, 
   onCreateTask,
+  onDeleteTask,
 }: TaskSelectionModalProps) => {
   const panY = useRef(new Animated.Value(0)).current;
   const [activeFilterTagId, setActiveFilterTagId] = useState<number | null>(null);
@@ -56,22 +58,31 @@ export const TaskSelectionModal = ({
   ).current;
 
   const renderItem = useCallback(({ item }: { item: Task }) => (
-    <TouchableOpacity 
-      style={styles.taskItem} 
-      onPress={() => {
-        onSelectTask(item);
-        onClose();
-      }}
-    >
-      <View>
-        <Text style={styles.taskTitle}>{item.title}</Text>
-        <Text style={styles.taskTag}>
-          {item.tagId ? (tagsMap[item.tagId] || 'Sem tag') : 'Sem tag'}
-        </Text>
-      </View>
-      <Feather name="chevron-right" size={24} color="#2A1128" opacity={0.5} />
-    </TouchableOpacity>
-  ), [onSelectTask, onClose, tagsMap]);
+    <View style={styles.taskItemContainer}>
+      <TouchableOpacity 
+        style={styles.taskItem} 
+        onPress={() => {
+          onSelectTask(item);
+          onClose();
+        }}
+      >
+        <View>
+          <Text style={styles.taskTitle}>{item.title}</Text>
+          <Text style={styles.taskTag}>
+            {item.tagId ? (tagsMap[item.tagId] || 'Sem tag') : 'Sem tag'}
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={24} color="#2A1128" opacity={0.5} />
+      </TouchableOpacity>
+      
+      <TouchableOpacity 
+        style={styles.deleteTaskButton}
+        onPress={() => onDeleteTask(item.id)}
+      >
+        <Feather name="trash-2" size={20} color="#FF4444" />
+      </TouchableOpacity>
+    </View>
+  ), [onSelectTask, onClose, tagsMap, onDeleteTask]);
 
   return (
     <Modal
@@ -172,14 +183,25 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 20,
   },
+  taskItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   taskItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'rgba(42, 17, 40, 0.05)',
     padding: 16,
     borderRadius: 16,
-    marginBottom: 12,
+  },
+  deleteTaskButton: {
+    padding: 12,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   taskTitle: {
     fontSize: 16,

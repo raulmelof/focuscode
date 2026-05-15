@@ -12,6 +12,7 @@ interface LocalTask {
   updatedAt: number;
   isDeleted: number;
   userId: string | null;
+  summaryImageUri: string | null;
 }
 
 interface LocalTag {
@@ -95,6 +96,7 @@ export class SyncService {
             description: task.description,
             isCompleted: task.isCompleted === 1,
             tagId: task.tagId ? task.tagId.toString() : null,
+            summaryImageUri: task.summaryImageUri,
             updatedAt: task.updatedAt
           }, { merge: true });
         }
@@ -153,13 +155,13 @@ export class SyncService {
 
         if (!existingTask) {
           await db.runAsync(
-            'INSERT INTO tasks (title, description, isCompleted, tagId, firebaseId, updatedAt, userId) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [data.title, data.description || null, data.isCompleted ? 1 : 0, localTagId, firebaseId, data.updatedAt || Date.now(), userId]
+            'INSERT INTO tasks (title, description, isCompleted, tagId, firebaseId, updatedAt, userId, summaryImageUri) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [data.title, data.description || null, data.isCompleted ? 1 : 0, localTagId, firebaseId, data.updatedAt || Date.now(), userId, data.summaryImageUri || null]
           );
         } else if (data.updatedAt && data.updatedAt > existingTask.updatedAt) {
           await db.runAsync(
-            'UPDATE tasks SET title = ?, description = ?, isCompleted = ?, tagId = ?, updatedAt = ? WHERE id = ?',
-            [data.title, data.description || null, data.isCompleted ? 1 : 0, localTagId, data.updatedAt, existingTask.id]
+            'UPDATE tasks SET title = ?, description = ?, isCompleted = ?, tagId = ?, updatedAt = ?, summaryImageUri = ? WHERE id = ?',
+            [data.title, data.description || null, data.isCompleted ? 1 : 0, localTagId, data.updatedAt, data.summaryImageUri || null, existingTask.id]
           );
         }
       }

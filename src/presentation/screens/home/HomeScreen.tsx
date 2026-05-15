@@ -11,6 +11,9 @@ import { CreateTaskModal } from '../../components/CreateTaskModal';
 import { ManageTagsModal } from '../../components/ManageTagsModal';
 import { styles } from './styles';
 import { useHomeViewModel } from './useHomeViewModel';
+import { TaskDetailsModal } from '../../components/TaskDetailsModal';
+import { CameraModal } from '../../components/CameraModal';
+import { FocusSummaryModal } from '../../components/FocusSummaryModal';
 import { signOut } from '../../../services/authService';
 
 export const HomeScreen = () => {
@@ -36,6 +39,17 @@ export const HomeScreen = () => {
     addTag,
     updateTag,
     deleteTag,
+    deleteTask,
+    isTaskDetailsModalVisible,
+    openTaskDetailsModal,
+    closeTaskDetailsModal,
+    isCameraModalVisible,
+    openCameraModal,
+    closeCameraModal,
+    handleCaptureSummary,
+    isFocusSummaryModalVisible,
+    lastCompletedTask,
+    goToBreak,
     isFlipEnabled,
     setIsFlipEnabled
   } = useHomeViewModel(); 
@@ -72,12 +86,13 @@ export const HomeScreen = () => {
         <TouchableOpacity 
           style={styles.taskPill} 
           activeOpacity={0.7} 
-          onPress={openTaskModal}
+          onPress={selectedTask ? openTaskDetailsModal : openTaskModal}
           disabled={isTaskModalVisible}
         >
           <Text style={styles.taskPillText}>
             {selectedTask ? selectedTask.title : 'Nenhuma tarefa selecionada'}
           </Text>
+          {selectedTask && <Feather name="info" size={18} color="#2A1128" style={{ marginLeft: 8, opacity: 0.5 }} />}
         </TouchableOpacity>
 
         <PomodoroCircle progress={progress} />
@@ -96,6 +111,7 @@ export const HomeScreen = () => {
         tasks={tasks}
         tags={tags}
         onCreateTask={openCreateTaskModal}
+        onDeleteTask={deleteTask}
       />
 
       <CreateTaskModal
@@ -120,6 +136,28 @@ export const HomeScreen = () => {
         onAddTag={addTag}
         onUpdateTag={updateTag}
         onDeleteTag={deleteTag}
+      />
+
+      <TaskDetailsModal
+        visible={isTaskDetailsModalVisible}
+        task={selectedTask}
+        tag={tags.find(t => t.id === selectedTask?.tagId)}
+        onClose={closeTaskDetailsModal}
+        onAttachSummary={openCameraModal}
+        onChangeTask={openTaskModal}
+      />
+
+      <FocusSummaryModal
+        visible={isFocusSummaryModalVisible}
+        task={lastCompletedTask}
+        onAttachPhoto={openCameraModal}
+        onGoToBreak={goToBreak}
+      />
+
+      <CameraModal
+        visible={isCameraModalVisible}
+        onClose={closeCameraModal}
+        onCapture={handleCaptureSummary}
       />
 
     </SafeAreaView>
