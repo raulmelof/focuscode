@@ -15,7 +15,7 @@ import { initDB } from '../../../data/database/database';
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { user } = useAuth();
-  const INITIAL_TIME = 25 * 60; // 25 minutes standard
+  const INITIAL_TIME = 1 * 60;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -63,10 +63,9 @@ export const useHomeViewModel = () => {
       }
     }
     navigation.navigate('BreakScreen');
-    resetTimer();
   }, [navigation, selectedTask, user]);
 
-  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
+  const { timeLeft, isRunning, start, pause } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
     onFocusEnd: () => handleFocusEnd(),
   });

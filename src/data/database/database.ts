@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
+
 export interface DatabaseConnection {
   execAsync: (sql: string) => Promise<void>;
   runAsync: (sql: string, params?: any[]) => Promise<{ lastInsertRowId: number; changes?: number }>;
@@ -152,7 +153,6 @@ export const getDBConnection = async (): Promise<DatabaseConnection> => {
   }
   const db = await SQLite.openDatabaseAsync('focuscode.db');
   return db as unknown as DatabaseConnection;
-
 };
 
 let initPromise: Promise<void> | null = null;

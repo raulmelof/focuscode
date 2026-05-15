@@ -20,7 +20,7 @@ export const TaskSelectionModal = ({
   onSelectTask, 
   tasks, 
   tags, 
-  onCreateTask 
+  onCreateTask,
 }: TaskSelectionModalProps) => {
   const panY = useRef(new Animated.Value(0)).current;
   const [activeFilterTagId, setActiveFilterTagId] = useState<number | null>(null);

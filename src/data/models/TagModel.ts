@@ -33,13 +33,4 @@ export class TagModel {
       [name, color, now, id, userId]
     );
   }
-
-  static async updateTag(id: number, name: string, color: string): Promise<void> {
-    const db = await getDBConnection();
-    const now = Date.now();
-    await db.runAsync(
-      'UPDATE tags SET name = ?, color = ?, updatedAt = ? WHERE id = ?',
-      [name, color, now, id]
-    );
-  }
 }
