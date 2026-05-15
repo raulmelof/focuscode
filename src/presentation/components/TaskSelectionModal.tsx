@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useCallback } from 'react';
 import { Modal, View, Text, TouchableOpacity, FlatList, StyleSheet, Animated, PanResponder } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Task } from '../../types/Task';
@@ -14,7 +14,14 @@ interface TaskSelectionModalProps {
   onCreateTask: () => void;
 }
 
-export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, tags, onCreateTask }: TaskSelectionModalProps) => {
+export const TaskSelectionModal = ({ 
+  visible, 
+  onClose, 
+  onSelectTask, 
+  tasks, 
+  tags, 
+  onCreateTask 
+}: TaskSelectionModalProps) => {
   const panY = useRef(new Animated.Value(0)).current;
   const [activeFilterTagId, setActiveFilterTagId] = useState<number | null>(null);
 
@@ -23,31 +30,32 @@ export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, tags
     return tasks.filter(task => task.tagId === activeFilterTagId);
   }, [tasks, activeFilterTagId]);
 
+  // Optimization: Tag map for instant lookup (O(1))
+  const tagsMap = useMemo(() => {
+    return tags.reduce((acc, tag) => {
+      acc[tag.id] = tag.name;
+      return acc;
+    }, {} as Record<number, string>);
+  }, [tags]);
+
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return gestureState.dy > 10;
-      },
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
       onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          panY.setValue(gestureState.dy);
-        }
+        if (gestureState.dy > 0) panY.setValue(gestureState.dy);
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 150 || gestureState.vy > 1) {
           onClose();
           setTimeout(() => panY.setValue(0), 300);
         } else {
-          Animated.spring(panY, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
+          Animated.spring(panY, { toValue: 0, useNativeDriver: true }).start();
         }
       },
     })
   ).current;
 
-  const renderItem = ({ item }: { item: Task }) => (
+  const renderItem = useCallback(({ item }: { item: Task }) => (
     <TouchableOpacity 
       style={styles.taskItem} 
       onPress={() => {
@@ -57,15 +65,13 @@ export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, tags
     >
       <View>
         <Text style={styles.taskTitle}>{item.title}</Text>
-        {item.tagId ? (
-          <Text style={styles.taskTag}>{tags.find(t => t.id === item.tagId)?.name || 'Sem tag'}</Text>
-        ) : (
-          <Text style={styles.taskTag}>Sem tag</Text>
-        )}
+        <Text style={styles.taskTag}>
+          {item.tagId ? (tagsMap[item.tagId] || 'Sem tag') : 'Sem tag'}
+        </Text>
       </View>
       <Feather name="chevron-right" size={24} color="#2A1128" opacity={0.5} />
     </TouchableOpacity>
-  );
+  ), [onSelectTask, onClose, tagsMap]);
 
   return (
     <Modal
@@ -74,18 +80,12 @@ export const TaskSelectionModal = ({ visible, onClose, onSelectTask, tasks, tags
       transparent={true}
       onRequestClose={onClose}
     >
-      {/* Overlay clicável para fechar tocando fora do modal */}
-      <TouchableOpacity 
-        style={styles.overlay} 
-        activeOpacity={1} 
-        onPressOut={onClose}
-      >
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPressOut={onClose}>
         <Animated.View 
           {...panResponder.panHandlers}
           style={[styles.content, { transform: [{ translateY: panY }] }]}
           onStartShouldSetResponder={() => true}
         >
-          {/* Área de arrasto (Drag Handle) e Cabeçalho */}
           <View style={styles.dragArea}>
             <View style={styles.dragHandle} />
             <View style={styles.header}>

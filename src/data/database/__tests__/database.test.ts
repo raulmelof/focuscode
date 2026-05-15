@@ -1,34 +1,52 @@
-import * as SQLite from 'expo-sqlite';
-import { getDBConnection, initDB } from '../database';
+import { Platform } from 'react-native';
 
-const mockExecAsync = jest.fn();
+const mockOpenDatabaseAsync = jest.fn();
 jest.mock('expo-sqlite', () => ({
-  openDatabaseAsync: jest.fn(() => ({
-    execAsync: mockExecAsync,
-  })),
+  openDatabaseAsync: (...args: any[]) => mockOpenDatabaseAsync(...args)
 }));
 
-describe('Database Configuration', () => {
+jest.mock('react-native', () => ({
+  Platform: { OS: 'ios' }
+}));
+
+describe('Database', () => {
+  let mockDb: any;
+  let databaseModule: any;
+
   beforeEach(() => {
+    jest.resetModules();
     jest.clearAllMocks();
+
+    mockDb = {
+      execAsync: jest.fn().mockResolvedValue(undefined),
+      runAsync: jest.fn().mockResolvedValue({ lastInsertRowId: 1 }),
+      getAllAsync: jest.fn().mockResolvedValue([]),
+      getFirstAsync: jest.fn().mockResolvedValue(null)
+    };
+
+    mockOpenDatabaseAsync.mockResolvedValue(mockDb);
+    databaseModule = jest.requireActual('../database');
   });
 
-  it('should call openDatabaseAsync to get connection', async () => {
-    await getDBConnection();
-    expect(SQLite.openDatabaseAsync).toHaveBeenCalledWith('focuscode.db');
+  it('should initialize database and enable foreign keys', async () => {
+    Platform.OS = 'ios';
+    await databaseModule.initDB();
+
+    expect(mockOpenDatabaseAsync).toHaveBeenCalledWith('focuscode.db');
+    expect(mockDb.execAsync).toHaveBeenCalledWith('PRAGMA foreign_keys = ON;');
+    expect(mockDb.execAsync).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS tags'));
+    expect(mockDb.execAsync).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS tasks'));
   });
 
-  it('should initialize database and execute table creation only once', async () => {
-    await initDB();
-    expect(SQLite.openDatabaseAsync).toHaveBeenCalledWith('focuscode.db');
-    expect(mockExecAsync).toHaveBeenCalledTimes(7);
-    
-    const query = mockExecAsync.mock.calls[0][0];
-    expect(query).toContain('CREATE TABLE IF NOT EXISTS tags');
-    expect(query).toContain('CREATE TABLE IF NOT EXISTS tasks');
+  it('should work on web using singleton', async () => {
+    Platform.OS = 'web';
+    // Mock resolve to simulate OPFS support
+    mockOpenDatabaseAsync.mockResolvedValue(mockDb);
 
-    // Calling it again should return the cached promise and not call execAsync twice
-    await initDB();
-    expect(mockExecAsync).toHaveBeenCalledTimes(7);
+    const db1 = await databaseModule.getDBConnection();
+    const db2 = await databaseModule.getDBConnection();
+
+    expect(db1).toBe(db2);
+    expect(mockOpenDatabaseAsync).toHaveBeenCalled();
   });
 });

@@ -1,134 +1,154 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { AppNavigationProp } from '../../../types/navigation'; 
+import { AppNavigationProp } from '../../../types/navigation';
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
-import { Task } from '../../../types/Task';
-import { Tag } from '../../../types/Tag';
+import { useFlipToFocus } from '../../../hooks/useFlipToFocus';
+import { useAuth } from '../../../contexts/AuthContext';
 import { TaskModel } from '../../../data/models/TaskModel';
 import { TagModel } from '../../../data/models/TagModel';
+import { Task } from '../../../types/Task';
+import { Tag } from '../../../types/Tag';
 import { initDB } from '../../../data/database/database';
-import { useFlipToFocus } from '../../../hooks/useFlipToFocus';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const INITIAL_TIME = 1 * 60; 
+  const { user } = useAuth();
+  const INITIAL_TIME = 25 * 60; // 25 minutes standard
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
   const [isManageTagsModalVisible, setIsManageTagsModalVisible] = useState(false);
   const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
 
-  const loadData = async () => {
+  // Load tasks and tags from local DB filtered by logged user
+  // When user is null (logout), clear UI cache automatically
+  const fetchTasks = useCallback(async () => {
+    if (!user) {
+      setTasks([]);
+      setTags([]);
+      return;
+    }
     try {
       await initDB();
-      const dbTasks = await TaskModel.getTasks();
-      const dbTags = await TagModel.getTags();
-      
-      setTasks(dbTasks.filter(t => !t.isCompleted));
+      const [localTasks, dbTags] = await Promise.all([
+        TaskModel.getTasks(user.uid),
+        TagModel.getTags(user.uid),
+      ]);
+      setTasks(localTasks.filter(t => !t.isCompleted));
       setTags(dbTags);
     } catch (error) {
-      console.error('Erro ao carregar dados do banco:', error);
+      console.error('useHomeViewModel: Error fetching tasks:', error);
     }
-  };
+  }, [user]);
 
+  // Re-run whenever user changes (login/logout)
   useEffect(() => {
-    loadData();
-  }, []);
+    fetchTasks();
+  }, [fetchTasks]);
 
-  // 1. Desestruturação direta do hook em uma única etapa
+  const handleFocusEnd = useCallback(async () => {
+    if (selectedTask && user) {
+      try {
+        await TaskModel.updateTaskStatus(user.uid, selectedTask.id, true);
+        setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
+        setSelectedTask(null);
+      } catch (error) {
+        console.error('[ViewModel] Error completing task:', error);
+      }
+    }
+    navigation.navigate('BreakScreen');
+    resetTimer();
+  }, [navigation, selectedTask, user]);
+
   const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
-    onFocusEnd: () => handleFocusEnd(), 
+    onFocusEnd: () => handleFocusEnd(),
   });
 
-  // Sensores para ativar função quando celular é virado de cabeça para baixo ou pausar quando movido
-  
+  // Sensors to trigger function when device is flipped or pause when moved
   const handlePauseFromSensor = useCallback(() => {
     pause();
-    Alert.alert('Foco Pausado', 'Você moveu o celular! O aparelho deve ficar com a tela virada para baixo.');
+    Alert.alert('Foco Pausado', 'O aparelho deve ficar com a tela virada para baixo.');
   }, [pause]);
 
   useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
 
+  const toggleTimer = useCallback(() => {
+    if (isRunning) pause(); else start();
+  }, [isRunning, pause, start]);
 
-  const handleFocusEnd = useCallback(async () => {
-    if (selectedTask) {
-      try {
-        await TaskModel.updateTaskStatus(selectedTask.id, true);
-        setTasks(prevTasks => prevTasks.filter(t => t.id !== selectedTask.id));
-        setSelectedTask(null);
-      } catch (error) {
-        console.error('Erro ao atualizar status da tarefa:', error);
-      }
-    }
-    
-    navigation.navigate('BreakScreen');
-    resetTimer(); 
-  }, [navigation, resetTimer, selectedTask]);
-
-  const toggleTimer = () => {
-    if (isRunning) {
-      pause();
-    } else {
-      start();
-    }
-  };
-
-  const openTaskModal = () => setIsTaskModalVisible(true);
-  const closeTaskModal = () => setIsTaskModalVisible(false);
+  const openTaskModal = useCallback(() => setIsTaskModalVisible(true), []);
+  const closeTaskModal = useCallback(() => setIsTaskModalVisible(false), []);
   
-  const selectTask = (task: Task) => {
+  const selectTask = useCallback((task: Task) => {
     setSelectedTask(task);
     closeTaskModal();
-  };
+  }, [closeTaskModal]);
 
-  const openCreateTaskModal = () => setIsCreateTaskModalVisible(true);
-  const closeCreateTaskModal = () => setIsCreateTaskModalVisible(false);
+  const openCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(true), []);
+  const closeCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(false), []);
 
-  const openManageTagsModal = () => setIsManageTagsModalVisible(true);
-  const closeManageTagsModal = () => setIsManageTagsModalVisible(false);
+  const openManageTagsModal = useCallback(() => setIsManageTagsModalVisible(true), []);
+  const closeManageTagsModal = useCallback(() => setIsManageTagsModalVisible(false), []);
 
-  const addTask = async (title: string, tagId?: number) => {
+  // Persist new task in SQLite linked to user.uid and reload list
+  const addTask = useCallback(async (title: string, tagId?: number) => {
+    if (!user) {
+      Alert.alert('Erro', 'Nenhum usuario autenticado.');
+      return;
+    }
     try {
-      await TaskModel.insertTask(title, undefined, tagId);
-      await loadData();
+      await TaskModel.insertTask(user.uid, title, undefined, tagId);
+      await fetchTasks();
       closeCreateTaskModal();
     } catch (error) {
-      console.error('Erro ao criar tarefa:', error);
-      Alert.alert('Erro', 'Não foi possível criar a tarefa.');
+      console.error('useHomeViewModel: Error creating task:', error);
+      Alert.alert('Erro', 'Não foi possível salvar a tarefa.');
     }
-  };
+  }, [user, fetchTasks, closeCreateTaskModal]);
 
-  const addTag = async (name: string, color: string) => {
-    await TagModel.insertTag(name, color);
-    await loadData();
-  };
+  const addTag = useCallback(async (name: string, color: string) => {
+    if (!user) return;
+    try {
+      await TagModel.insertTag(user.uid, name, color);
+      await fetchTasks();
+    } catch (error) {
+      console.error('[ViewModel] Error adding tag:', error);
+    }
+  }, [user, fetchTasks]);
 
-  const updateTag = async (id: number, name: string, color: string) => {
-    await TagModel.updateTag(id, name, color);
-    await loadData();
-  };
+  const updateTag = useCallback(async (id: number, name: string, color: string) => {
+    if (!user) return;
+    try {
+      await TagModel.updateTag(user.uid, id, name, color);
+      await fetchTasks();
+    } catch (error) {
+      console.error('[ViewModel] Error updating tag:', error);
+    }
+  }, [user, fetchTasks]);
 
-  const deleteTag = async (id: number) => {
-    await TagModel.deleteTag(id);
-    await loadData();
-  };
-
-  const formattedTime = formatTime(timeLeft);
-  const buttonTitle = isRunning ? "PAUSAR FOCO" : "INICIAR FOCO";
-  const progress = 1 - (timeLeft / INITIAL_TIME);
+  const deleteTag = useCallback(async (id: number) => {
+    if (!user) return;
+    try {
+      await TagModel.deleteTag(user.uid, id);
+      await fetchTasks();
+    } catch (error) {
+      console.error('[ViewModel] Error deleting tag:', error);
+    }
+  }, [user, fetchTasks]);
 
   return {
-    formattedTime,
+    formattedTime: formatTime(timeLeft),
     isRunning,
-    buttonTitle,
+    buttonTitle: isRunning ? 'PAUSAR FOCO' : 'INICIAR FOCO',
     toggleTimer,
-    progress,
+    progress: 1 - timeLeft / INITIAL_TIME,
     tasks,
     tags,
     selectedTask,
@@ -149,4 +169,4 @@ export const useHomeViewModel = () => {
     isFlipEnabled,
     setIsFlipEnabled,
   };
-};
+};

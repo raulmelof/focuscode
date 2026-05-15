@@ -25,6 +25,7 @@ export const usePomodoro = ({ initialTimeInSeconds, onFocusEnd }: UsePomodoroPro
           if (onFocusEnd) {
             onFocusEnd();
           }
+          setTimeLeft(initialTimeInSeconds);
         }, 1000);
       }
     }
@@ -37,7 +38,7 @@ export const usePomodoro = ({ initialTimeInSeconds, onFocusEnd }: UsePomodoroPro
         clearTimeout(timeout);
       }
     };
-  }, [isRunning, timeLeft, onFocusEnd]);
+  }, [isRunning, timeLeft, onFocusEnd, initialTimeInSeconds]);
 
   const start = useCallback(() => setIsRunning(true), []);
   const pause = useCallback(() => setIsRunning(false), []);

@@ -1,69 +1,179 @@
 import * as SQLite from 'expo-sqlite';
 import { Platform } from 'react-native';
+export interface DatabaseConnection {
+  execAsync: (sql: string) => Promise<void>;
+  runAsync: (sql: string, params?: any[]) => Promise<{ lastInsertRowId: number; changes?: number }>;
+  getAllAsync: <T>(sql: string, params?: any[]) => Promise<T[]>;
+  getFirstAsync: <T>(sql: string, params?: any[]) => Promise<T | null>;
+}
 
-const memoryDB = {
-  tasks: [] as any[],
-  tags: [] as any[]
+const createWebDBAdapter = (): DatabaseConnection => {
+  const STORAGE_KEY = 'focuscode_web_db';
+  const savedData = Platform.OS === 'web' ? localStorage.getItem(STORAGE_KEY) : null;
+  const tables: Record<string, any[]> = savedData ? JSON.parse(savedData) : {};
+  let autoIncrementIds: Record<string, number> = {};
+
+  Object.keys(tables).forEach(tableName => {
+    const maxId = tables[tableName].reduce((max, item) => Math.max(max, item.id || 0), 0);
+    autoIncrementIds[tableName] = maxId + 1;
+  });
+
+  const persist = () => {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tables));
+    }
+  };
+
+  return {
+    execAsync: async (sql: string) => {
+      if (sql.includes('CREATE TABLE IF NOT EXISTS')) {
+        const parts = sql.split('CREATE TABLE IF NOT EXISTS');
+        for (let i = 1; i < parts.length; i++) {
+          const tableName = parts[i].trim().split(' ')[0].trim().split('(')[0].trim();
+          if (tableName && !tables[tableName]) {
+            tables[tableName] = [];
+            autoIncrementIds[tableName] = 1;
+          }
+        }
+      }
+    },
+
+    runAsync: async (sql: string, params: any[] = []) => {
+      const sqlUpper = sql.toUpperCase();
+
+      if (sqlUpper.includes('INSERT INTO')) {
+        const tableNameMatch = sql.match(/INSERT INTO (\w+)/i);
+        const tableName = tableNameMatch ? tableNameMatch[1] : '';
+        const columnsMatch = sql.match(/\(([^)]+)\)/);
+        const columns = columnsMatch ? columnsMatch[1].split(',').map(c => c.trim()) : [];
+
+        if (tableName) {
+          if (!tables[tableName]) {
+            tables[tableName] = [];
+            autoIncrementIds[tableName] = 1;
+          }
+          const id = autoIncrementIds[tableName]++;
+          const row: any = { id };
+          columns.forEach((col, i) => {
+            row[col] = params[i];
+          });
+          if (row.isDeleted === undefined) row.isDeleted = 0;
+          if (row.updatedAt === undefined) row.updatedAt = Date.now();
+          if (row.isCompleted === undefined) row.isCompleted = 0;
+          tables[tableName].push(row);
+          persist();
+          return { lastInsertRowId: id };
+        }
+      }
+
+      if (sqlUpper.includes('UPDATE')) {
+        const tableNameMatch = sql.match(/UPDATE (\w+)/i);
+        const tableName = tableNameMatch ? tableNameMatch[1] : '';
+        if (tableName && tables[tableName]) {
+          const idParam = params[params.length - 1];
+          const row = tables[tableName].find(r => r.id === Number(idParam) || r.firebaseId === idParam);
+          if (row) {
+            if (sql.includes('firebaseId = ?')) {
+              // Encontra a posição do firebaseId nos params (geralmente o primeiro em UPDATE table SET firebaseId = ? WHERE id = ?)
+              row.firebaseId = params[0];
+            }
+            if (sql.includes('isCompleted = ?')) row.isCompleted = params[0];
+            if (sql.includes('isDeleted = ?')) row.isDeleted = params[0];
+            if (sql.includes('updatedAt = ?')) {
+              // Se tiver isDeleted, updatedAt costuma ser o segundo param. Se for update normal de tag, é o terceiro.
+              const updatedAtIdx = sql.includes('isDeleted') ? 1 : (sql.includes('name') ? 2 : 1);
+              row.updatedAt = params[updatedAtIdx] || Date.now();
+            }
+            persist();
+          }
+        }
+        return { changes: 1, lastInsertRowId: 0 };
+      }
+
+      if (sqlUpper.includes('DELETE FROM')) {
+        const tableNameMatch = sql.match(/DELETE FROM (\w+)/i);
+        const tableName = tableNameMatch ? tableNameMatch[1] : '';
+        if (tableName && tables[tableName]) {
+          const idParam = params[0];
+          tables[tableName] = tables[tableName].filter(r => r.id !== Number(idParam));
+          persist();
+        }
+        return { changes: 1, lastInsertRowId: 0 };
+      }
+
+      return { lastInsertRowId: 0, changes: 0 };
+    },
+
+    getAllAsync: async <T>(sql: string, params: any[] = []): Promise<T[]> => {
+      const tableNameMatch = sql.match(/FROM (\w+)/i);
+      const tableName = tableNameMatch ? tableNameMatch[1] : '';
+      if (!tableName || !tables[tableName]) return [];
+
+      let results = [...tables[tableName]];
+      if (sql.includes('isDeleted = 0')) {
+        results = results.filter(r => r.isDeleted === 0);
+      }
+      // Aplica filtro de userId se presente na query
+      if (sql.includes('userId = ?')) {
+        const userIdParamIndex = params.length - 1;
+        const filterUserId = params[userIdParamIndex];
+        results = results.filter(r => r.userId === filterUserId);
+      }
+      return results as T[];
+    },
+
+    getFirstAsync: async <T>(sql: string, params: any[] = []): Promise<T | null> => {
+      const tableNameMatch = sql.match(/FROM (\w+)/i);
+      const tableName = tableNameMatch ? tableNameMatch[1] : '';
+      if (!tableName || !tables[tableName]) return null;
+
+      if (sql.includes('firebaseId = ?')) {
+        const found = tables[tableName].find(r => r.firebaseId === params[0]);
+        return (found as T) || null;
+      }
+      return (tables[tableName][0] as T) || null;
+    },
+  };
 };
 
-export const getDBConnection = async () => {
+let webDB: DatabaseConnection | null = null;
+
+export const getDBConnection = async (): Promise<DatabaseConnection> => {
   if (Platform.OS === 'web') {
-    return {
-      execAsync: async () => {},
-      getAllAsync: async (query: string) => {
-        if (query.includes('tasks')) return memoryDB.tasks.filter(t => !t.isDeleted);
-        if (query.includes('tags')) return memoryDB.tags.filter(t => !t.isDeleted);
-        return [];
-      },
-      runAsync: async (query: string, args: any[] = []) => {
-        const id = Math.floor(Math.random() * 100000);
-        if (query.includes('INSERT INTO tasks')) {
-          memoryDB.tasks.push({ id, title: args[0], description: args[1], isCompleted: args[2], tagId: args[3], isDeleted: 0 });
-        } else if (query.includes('INSERT INTO tags')) {
-          memoryDB.tags.push({ id, name: args[0], color: args[1], isDeleted: 0 });
-        } else if (query.includes('UPDATE tasks SET isCompleted')) {
-          const task = memoryDB.tasks.find(t => t.id === args[2]);
-          if (task) task.isCompleted = args[0];
-        } else if (query.includes('UPDATE tasks SET isDeleted')) {
-          const task = memoryDB.tasks.find(t => t.id === args[1]);
-          if (task) task.isDeleted = 1;
-        } else if (query.includes('UPDATE tags SET name')) {
-          const tag = memoryDB.tags.find(t => t.id === args[3]);
-          if (tag) { tag.name = args[0]; tag.color = args[1]; }
-        } else if (query.includes('UPDATE tags SET isDeleted')) {
-          const tag = memoryDB.tags.find(t => t.id === args[1]);
-          if (tag) tag.isDeleted = 1;
-        }
-        return { lastInsertRowId: id };
-      },
-    } as any;
+    if (!webDB) {
+      try {
+        const realDb = await SQLite.openDatabaseAsync('focuscode.db');
+        webDB = realDb as unknown as DatabaseConnection;
+      } catch {
+        webDB = createWebDBAdapter();
+      }
+    }
+    return webDB;
   }
-  return await SQLite.openDatabaseAsync('focuscode.db');
+  const db = await SQLite.openDatabaseAsync('focuscode.db');
+  return db as unknown as DatabaseConnection;
+
 };
 
 let initPromise: Promise<void> | null = null;
 
 export const initDB = async () => {
-  if (initPromise) {
-    return initPromise;
-  }
+  if (initPromise) return initPromise;
 
   initPromise = (async () => {
     try {
       const db = await getDBConnection();
-
+      await db.execAsync('PRAGMA foreign_keys = ON;');
       await db.execAsync(`
-        PRAGMA journal_mode = WAL;
-        
         CREATE TABLE IF NOT EXISTS tags (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           color TEXT NOT NULL,
           firebaseId TEXT,
+          userId TEXT,
           updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
           isDeleted INTEGER DEFAULT 0
         );
-
         CREATE TABLE IF NOT EXISTS tasks (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           title TEXT NOT NULL,
@@ -71,34 +181,29 @@ export const initDB = async () => {
           isCompleted INTEGER DEFAULT 0,
           tagId INTEGER,
           firebaseId TEXT,
+          userId TEXT,
           updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
           isDeleted INTEGER DEFAULT 0,
           FOREIGN KEY (tagId) REFERENCES tags (id)
         );
       `);
 
-      // Tenta adicionar as colunas se as tabelas já existirem (migração leve)
-      const alterTables = [
+      const alterQueries = [
         "ALTER TABLE tags ADD COLUMN firebaseId TEXT;",
+        "ALTER TABLE tags ADD COLUMN userId TEXT;",
         "ALTER TABLE tags ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000);",
         "ALTER TABLE tags ADD COLUMN isDeleted INTEGER DEFAULT 0;",
         "ALTER TABLE tasks ADD COLUMN firebaseId TEXT;",
+        "ALTER TABLE tasks ADD COLUMN userId TEXT;",
         "ALTER TABLE tasks ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000);",
         "ALTER TABLE tasks ADD COLUMN isDeleted INTEGER DEFAULT 0;"
       ];
 
-      for (const query of alterTables) {
-        try {
-          await db.execAsync(query);
-        } catch {
-          // A coluna já existe, ignora o erro
-        }
+      for (const query of alterQueries) {
+        try { await db.execAsync(query); } catch { }
       }
-
-      console.log('Database initialized successfully: tables tags and tasks created/verified with sync columns.');
     } catch (error) {
-      console.error('Error initializing database:', error);
-      initPromise = null; // Permite tentar novamente em caso de erro
+      initPromise = null;
       throw error;
     }
   })();

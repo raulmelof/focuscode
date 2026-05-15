@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
@@ -11,6 +11,7 @@ import { CreateTaskModal } from '../../components/CreateTaskModal';
 import { ManageTagsModal } from '../../components/ManageTagsModal';
 import { styles } from './styles';
 import { useHomeViewModel } from './useHomeViewModel';
+import { signOut } from '../../../services/authService';
 
 export const HomeScreen = () => {
   const { 
@@ -40,13 +41,18 @@ export const HomeScreen = () => {
   } = useHomeViewModel(); 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Novo Cabeçalho: Menu Lateral + Título do App */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton} 
-          onPress={() => console.log('Abrir menu lateral')}
+          onPress={async () => {
+            const result = await signOut();
+            if (!result.success) {
+              Alert.alert('Erro', result.error || 'Erro ao sair.');
+            }
+            // AuthContext detecta o logout e redireciona para Login automaticamente
+          }}
         >
-          <Feather name="menu" size={32} color="#2A1128" />
+          <Feather name="log-out" size={28} color="#2A1128" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>FocusCode</Text>
         {Platform.OS !== 'web' && (
@@ -61,10 +67,8 @@ export const HomeScreen = () => {
         )}
       </View>
 
-      {/* Conteúdo Central */}
       <View style={styles.container}>
 
-        {/* Pílula de Tarefa (Acima do Círculo) */}
         <TouchableOpacity 
           style={styles.taskPill} 
           activeOpacity={0.7} 
@@ -76,15 +80,12 @@ export const HomeScreen = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Círculo com a Caneca */}
         <PomodoroCircle progress={progress} />
 
-        {/* Relógio */}
         <View style={styles.timerContainer}>
           <TimerDisplay time={formattedTime} />
         </View>
 
-        {/* Botão Principal */}
         <PrimaryButton title={buttonTitle} onPress={toggleTimer} />
       </View>
 
@@ -111,6 +112,10 @@ export const HomeScreen = () => {
       <ManageTagsModal
         visible={isManageTagsModalVisible}
         onClose={closeManageTagsModal}
+        onBack={() => {
+          closeManageTagsModal();
+          openCreateTaskModal();
+        }}
         tags={tags}
         onAddTag={addTag}
         onUpdateTag={updateTag}

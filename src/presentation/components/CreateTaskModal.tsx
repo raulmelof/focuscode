@@ -23,6 +23,7 @@ interface CreateTaskModalProps {
 export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }: CreateTaskModalProps) => {
   const [title, setTitle] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<number | undefined>(undefined);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleSave = () => {
     if (title.trim() === '') {
@@ -32,6 +33,8 @@ export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }
     onSave(title, selectedTagId);
     setTitle('');
     setSelectedTagId(undefined);
+    setSuccessMessage('Tarefa criada com sucesso!');
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   return (
@@ -53,6 +56,13 @@ export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }
               <Feather name="x" size={24} color="#2A1128" />
             </TouchableOpacity>
           </View>
+
+          {successMessage !== '' && (
+            <View style={styles.successBanner}>
+              <Feather name="check-circle" size={16} color="#04D361" />
+              <Text style={styles.successText}>{successMessage}</Text>
+            </View>
+          )}
 
           <View style={styles.form}>
             <Text style={styles.label}>Título da Tarefa</Text>
@@ -172,6 +182,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  successBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(4, 211, 97, 0.15)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  successText: {
+    color: '#04D361',
+    fontSize: 14,
+    fontWeight: '600',
   },
   tagsHeader: {
     flexDirection: 'row',
