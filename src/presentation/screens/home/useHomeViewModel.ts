@@ -14,9 +14,8 @@ import { initDB } from '../../../data/database/database';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const INITIAL_TIME = 1 * 60;
-
   const { user } = useAuth();
+  const INITIAL_TIME = 1 * 60;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -169,4 +168,4 @@ export const useHomeViewModel = () => {
     isFlipEnabled,
     setIsFlipEnabled,
   };
-};
+};

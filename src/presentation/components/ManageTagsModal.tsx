@@ -15,14 +15,14 @@ import { Feather } from '@expo/vector-icons';
 import { Tag } from '../../types/Tag';
 
 const TAG_COLORS = [
-  '#E83F5B',
-  '#04D361',
-  '#8257E5',
-  '#FFB800',
-  '#00BFFF',
-  '#FF69B4',
-  '#A0522D',
-  '#2A1128',
+  '#E83F5B', // Red
+  '#04D361', // Green
+  '#8257E5', // Purple
+  '#FFB800', // Yellow
+  '#00BFFF', // Blue
+  '#FF69B4', // Pink
+  '#A0522D', // Brown
+  '#2A1128', // Dark
 ];
 
 interface ManageTagsModalProps {
@@ -99,6 +99,7 @@ export const ManageTagsModal = ({
       return;
     }
 
+
     Alert.alert(
       'Excluir Tag',
       'Tem certeza que deseja excluir esta tag? As tarefas associadas poderão ficar sem categoria.',
@@ -170,7 +171,6 @@ export const ManageTagsModal = ({
               <Text style={styles.successText}>{successMessage}</Text>
             </View>
           )}
-
           <FlatList
             data={tags}
             keyExtractor={item => item.id.toString()}

@@ -1,8 +1,9 @@
-import React, { useRef, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useMemo, useCallback } from 'react';
 import { Modal, View, Text, TouchableOpacity, FlatList, StyleSheet, Animated, PanResponder } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Task } from '../../types/Task';
 import { Tag } from '../../types/Tag';
+import { TagCloud } from './TagCloud';
 
 interface TaskSelectionModalProps {
   visible: boolean;
@@ -19,9 +20,15 @@ export const TaskSelectionModal = ({
   onSelectTask, 
   tasks, 
   tags, 
-  onCreateTask 
+  onCreateTask,
 }: TaskSelectionModalProps) => {
   const panY = useRef(new Animated.Value(0)).current;
+  const [activeFilterTagId, setActiveFilterTagId] = useState<number | null>(null);
+
+  const filteredTasks = useMemo(() => {
+    if (activeFilterTagId === null) return tasks;
+    return tasks.filter(task => task.tagId === activeFilterTagId);
+  }, [tasks, activeFilterTagId]);
 
   // Optimization: Tag map for instant lookup (O(1))
   const tagsMap = useMemo(() => {
@@ -87,14 +94,23 @@ export const TaskSelectionModal = ({
                 <Feather name="x" size={24} color="#2A1128" />
               </TouchableOpacity>
             </View>
+            
+            <TagCloud 
+              tags={tags} 
+              activeTagId={activeFilterTagId} 
+              onSelectTag={setActiveFilterTagId} 
+            />
           </View>
 
           <FlatList
-            data={tasks}
+            data={filteredTasks}
             keyExtractor={(item) => item.id.toString()}
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>Nenhuma tarefa encontrada.</Text>
+            }
           />
 
           <TouchableOpacity 
@@ -190,5 +206,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: 'rgba(42, 17, 40, 0.5)',
+    marginTop: 20,
+    fontSize: 14,
   }
 });
