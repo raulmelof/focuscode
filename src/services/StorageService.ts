@@ -9,14 +9,19 @@ export class StorageService {
    * Adiciona compressão e redimensionamento automáticos para imagens novas e antigas (históricas)
    * para garantir que elas fiquem super leves (geralmente < 50KB) e nunca estourem o limite de 1MB do Firestore.
    * 
-   * @param uri URI da imagem local (file:// ou blob:)
+   * @param uri URI da imagem local (file:// ou blob:) ou string Base64 existente
    * @param taskId ID da tarefa correspondente
    * @returns Data URL Base64 da imagem (ex: data:image/jpeg;base64,...)
    */
   static async uploadTaskImage(uri: string, taskId: number): Promise<string> {
     try {
-      // Se a imagem já for uma URL remota ou Base64, retorna diretamente
-      if (uri.startsWith('data:') || uri.startsWith('http://') || uri.startsWith('https://')) {
+      // Se a imagem já for uma URL remota HTTP/HTTPS, retorna diretamente
+      if (uri.startsWith('http://') || uri.startsWith('https://')) {
+        return uri;
+      }
+
+      // Se a imagem já for Base64 e for pequena (menor que 150KB), retorna diretamente
+      if (uri.startsWith('data:') && uri.length < 150000) {
         return uri;
       }
 
@@ -26,7 +31,7 @@ export class StorageService {
       // 1. Redimensionar e comprimir a imagem antes do upload (garante que caiba no Firestore)
       let processedUri = uri;
       try {
-        console.log(`[StorageService] Redimensionando e comprimindo imagem local: ${uri}`);
+        console.log(`[StorageService] Redimensionando e comprimindo imagem/Base64 de tarefa ${taskId}...`);
         const manipResult = await ImageManipulator.manipulateAsync(
           uri,
           [{ resize: { width: 500 } }], // Redimensiona para no máximo 500px de largura mantendo a proporção
@@ -35,7 +40,14 @@ export class StorageService {
         processedUri = manipResult.uri;
         console.log(`[StorageService] Imagem comprimida gerada com sucesso!`);
       } catch (manipError) {
-        console.warn('[StorageService] Falha ao comprimir imagem local, usando original como fallback:', manipError);
+        console.warn('[StorageService] Falha ao comprimir imagem local/Base64:', manipError);
+        
+        // Se falhar a compressão e a imagem Base64 for muito grande (>900KB),
+        // limpamos para evitar o crash de limite do Firestore
+        if (uri.startsWith('data:') && uri.length > 900000) {
+          console.warn('[StorageService] Imagem Base64 muito grande e falhou ao comprimir. Ignorando imagem para permitir sincronismo da tarefa.');
+          return ''; // Retorna string vazia para que a tarefa possa sincronizar sem travar
+        }
       }
 
       // 2. Ler o arquivo local/processado como Blob
