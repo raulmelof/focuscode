@@ -18,6 +18,7 @@
     "axios": "^1.15.2",
     "expo": "~54.0.33",
     "expo-camera": "~17.0.10",
+    "expo-image-manipulator": "~14.0.8",
     "expo-sensors": "^55.0.14",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",

@@ -2,6 +2,11 @@ import { SyncService } from '../SyncService';
 import { getDBConnection, initDB } from '../../data/database/database';
 import { setDoc, getDocs, doc } from 'firebase/firestore';
 
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn((uri) => Promise.resolve({ uri })),
+  SaveFormat: { JPEG: 'jpeg' }
+}));
+
 jest.mock('expo-sqlite', () => ({
   openDatabaseAsync: jest.fn()
 }));

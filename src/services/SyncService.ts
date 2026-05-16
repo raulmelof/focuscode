@@ -102,7 +102,7 @@ export class SyncService {
             try {
               console.log(`[SyncService] Fazendo upload de imagem local para tarefa ${task.id}...`);
               const uploadedUrl = await StorageService.uploadTaskImage(task.summaryImageUri, task.id);
-              console.log(`[SyncService] Upload concluído! URL pública: ${uploadedUrl}`);
+              console.log(`[SyncService] Upload concluído! URL: ${uploadedUrl.substring(0, 80)}...`);
               
               // Atualiza localmente no SQLite
               await db.runAsync(
