@@ -139,6 +139,8 @@ const createWebDBAdapter = (): DatabaseConnection => {
 
 let webDB: DatabaseConnection | null = null;
 
+let dbInstance: DatabaseConnection | null = null;
+
 export const getDBConnection = async (): Promise<DatabaseConnection> => {
   if (Platform.OS === 'web') {
     if (!webDB) {
@@ -151,8 +153,12 @@ export const getDBConnection = async (): Promise<DatabaseConnection> => {
     }
     return webDB;
   }
-  const db = await SQLite.openDatabaseAsync('focuscode.db');
-  return db as unknown as DatabaseConnection;
+  
+  if (!dbInstance) {
+    const db = await SQLite.openDatabaseAsync('focuscode.db');
+    dbInstance = db as unknown as DatabaseConnection;
+  }
+  return dbInstance;
 };
 
 let initPromise: Promise<void> | null = null;
@@ -184,6 +190,7 @@ export const initDB = async () => {
           userId TEXT,
           updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
           isDeleted INTEGER DEFAULT 0,
+          summaryImageUri TEXT,
           FOREIGN KEY (tagId) REFERENCES tags (id)
         );
       `);
@@ -196,7 +203,8 @@ export const initDB = async () => {
         "ALTER TABLE tasks ADD COLUMN firebaseId TEXT;",
         "ALTER TABLE tasks ADD COLUMN userId TEXT;",
         "ALTER TABLE tasks ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000);",
-        "ALTER TABLE tasks ADD COLUMN isDeleted INTEGER DEFAULT 0;"
+        "ALTER TABLE tasks ADD COLUMN isDeleted INTEGER DEFAULT 0;",
+        "ALTER TABLE tasks ADD COLUMN summaryImageUri TEXT;"
       ];
 
       for (const query of alterQueries) {
