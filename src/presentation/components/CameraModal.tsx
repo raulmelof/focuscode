@@ -42,7 +42,9 @@ export const CameraModal = ({ visible, onClose, onCapture }: CameraModalProps) =
   const takePicture = async () => {
     if (cameraRef.current) {
       try {
-        const photoData = await cameraRef.current.takePictureAsync();
+        const photoData = await cameraRef.current.takePictureAsync({
+          quality: 0.2, // Compacta a imagem para caber perfeitamente no Firestore (limite de 1MB)
+        });
         if (photoData) {
           setPhoto(photoData);
         }
