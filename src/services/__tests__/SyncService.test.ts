@@ -1,6 +1,7 @@
 import { SyncService } from '../SyncService';
 import { getDBConnection, initDB } from '../../data/database/database';
 import { setDoc, getDocs, doc } from 'firebase/firestore';
+import { StorageService } from '../StorageService';
 
 jest.mock('expo-image-manipulator', () => ({
   manipulateAsync: jest.fn((uri) => Promise.resolve({ uri })),
@@ -148,7 +149,6 @@ describe('SyncService', () => {
   });
 
   it('deve fazer upload de imagem local para o Firebase Storage durante o push e atualizar a URL no SQLite e Firestore', async () => {
-    const { StorageService } = require('../StorageService');
     (StorageService.uploadTaskImage as jest.Mock).mockResolvedValue('https://firebase.com/uploaded.jpg');
 
     mockDb.getAllAsync.mockImplementation((queryStr: string) => {
