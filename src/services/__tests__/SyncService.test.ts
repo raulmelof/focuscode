@@ -1,6 +1,12 @@
 import { SyncService } from '../SyncService';
 import { getDBConnection, initDB } from '../../data/database/database';
 import { setDoc, getDocs, doc } from 'firebase/firestore';
+import { StorageService } from '../StorageService';
+
+jest.mock('expo-image-manipulator', () => ({
+  manipulateAsync: jest.fn((uri) => Promise.resolve({ uri })),
+  SaveFormat: { JPEG: 'jpeg' }
+}));
 
 jest.mock('expo-sqlite', () => ({
   openDatabaseAsync: jest.fn()
@@ -10,6 +16,12 @@ jest.mock('../../data/database/database');
 jest.mock('../firebase', () => ({
   auth: { currentUser: { uid: 'test-user-id', email: 'test@example.com' } },
   db: {}
+}));
+
+jest.mock('../StorageService', () => ({
+  StorageService: {
+    uploadTaskImage: jest.fn()
+  }
 }));
 
 jest.mock('firebase/firestore', () => {
@@ -134,5 +146,41 @@ describe('SyncService', () => {
     await SyncService.sync();
 
     expect(mockDb.runAsync).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE'), expect.anything());
+  });
+
+  it('deve fazer upload de imagem local para o Firebase Storage durante o push e atualizar a URL no SQLite e Firestore', async () => {
+    (StorageService.uploadTaskImage as jest.Mock).mockResolvedValue('https://firebase.com/uploaded.jpg');
+
+    mockDb.getAllAsync.mockImplementation((queryStr: string) => {
+      if (queryStr.includes('tasks')) {
+        return Promise.resolve([
+          { id: 1, title: 'Task Local Image', firebaseId: 'fb-task-1', updatedAt: 1000, isDeleted: 0, userId: TEST_USER_ID, summaryImageUri: 'file:///path/to/image.jpg' }
+        ]);
+      }
+      return Promise.resolve([]);
+    });
+
+    (doc as jest.Mock).mockImplementation(() => ({ id: 'fb-task-1' }));
+    (getDocs as jest.Mock).mockResolvedValue({ docs: [] });
+
+    await SyncService.sync();
+
+    // Deve chamar o upload da imagem
+    expect(StorageService.uploadTaskImage).toHaveBeenCalledWith('file:///path/to/image.jpg', 1);
+
+    // Deve salvar a nova URL pública no SQLite local
+    expect(mockDb.runAsync).toHaveBeenCalledWith(
+      'UPDATE tasks SET summaryImageUri = ? WHERE id = ?',
+      ['https://firebase.com/uploaded.jpg', 1]
+    );
+
+    // Deve enviar a URL pública para o Firestore
+    expect(setDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        summaryImageUri: 'https://firebase.com/uploaded.jpg'
+      }),
+      { merge: true }
+    );
   });
 });

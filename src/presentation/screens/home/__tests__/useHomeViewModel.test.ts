@@ -13,6 +13,13 @@ jest.mock('@react-navigation/native', () => ({
   }),
 }));
 
+// Mock SyncService to prevent real Firebase dependency imports
+jest.mock('../../../../services/SyncService', () => ({
+  SyncService: {
+    sync: jest.fn().mockResolvedValue(true)
+  }
+}));
+
 // Mock Sensors
 jest.mock('expo-sensors', () => ({
   Accelerometer: {

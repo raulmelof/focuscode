@@ -1,6 +1,7 @@
 import { collection, doc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db as firestoreDb, auth } from './firebase';
 import { getDBConnection, initDB } from '../data/database/database';
+import { StorageService } from './StorageService';
 
 interface LocalTask {
   id: number;
@@ -90,13 +91,37 @@ export class SyncService {
           await deleteDoc(docRef);
           await db.runAsync('DELETE FROM tasks WHERE id = ?', [task.id]);
         } else {
+          // Se tiver imagem e for uma URI local, faz o upload para o Firebase Storage primeiro
+          let finalImageUrl = task.summaryImageUri;
+          if (task.summaryImageUri && (
+            task.summaryImageUri.startsWith('file://') ||
+            task.summaryImageUri.startsWith('content://') ||
+            task.summaryImageUri.startsWith('ph://') ||
+            task.summaryImageUri.startsWith('blob:')
+          )) {
+            try {
+              console.log(`[SyncService] Fazendo upload de imagem local para tarefa ${task.id}...`);
+              const uploadedUrl = await StorageService.uploadTaskImage(task.summaryImageUri, task.id);
+              console.log(`[SyncService] Upload concluído! URL: ${uploadedUrl.substring(0, 80)}...`);
+              
+              // Atualiza localmente no SQLite
+              await db.runAsync(
+                'UPDATE tasks SET summaryImageUri = ? WHERE id = ?',
+                [uploadedUrl, task.id]
+              );
+              finalImageUrl = uploadedUrl;
+            } catch (uploadError) {
+              console.error(`[SyncService] Erro ao fazer upload da imagem para a tarefa ${task.id}:`, uploadError);
+            }
+          }
+
           await setDoc(docRef, {
             userId,
             title: task.title,
             description: task.description,
             isCompleted: task.isCompleted === 1,
             tagId: task.tagId ? task.tagId.toString() : null,
-            summaryImageUri: task.summaryImageUri,
+            summaryImageUri: finalImageUrl,
             updatedAt: task.updatedAt
           }, { merge: true });
         }

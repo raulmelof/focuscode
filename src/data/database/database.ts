@@ -210,6 +210,16 @@ export const initDB = async () => {
       for (const query of alterQueries) {
         try { await db.execAsync(query); } catch { }
       }
+
+      // Limpar imagens Base64 gigantes históricas do banco de dados local
+      if (Platform.OS !== 'web') {
+        try {
+          await db.runAsync("UPDATE tasks SET summaryImageUri = NULL WHERE summaryImageUri LIKE 'data:%' AND length(summaryImageUri) > 150000");
+          console.log('[database] Base64 gigantes históricas limpas com sucesso do banco de dados.');
+        } catch (cleanError) {
+          console.warn('[database] Erro ao limpar Base64 gigantes do banco local:', cleanError);
+        }
+      }
     } catch (error) {
       initPromise = null;
       throw error;
