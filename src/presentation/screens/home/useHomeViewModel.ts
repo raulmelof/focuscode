@@ -11,6 +11,7 @@ import { TagModel } from '../../../data/models/TagModel';
 import { Task } from '../../../types/Task';
 import { Tag } from '../../../types/Tag';
 import { initDB } from '../../../data/database/database';
+import { SyncService } from '../../../services/SyncService';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -69,6 +70,9 @@ export const useHomeViewModel = () => {
         
         // Em vez de navegar direto, mostra o modal de resumo
         setIsFocusSummaryModalVisible(true);
+        
+        // Dispara sincronização em background
+        SyncService.sync().catch(err => console.error('[ViewModel] Error syncing completed task:', err));
       } catch (error) {
         console.error('[ViewModel] Error completing task:', error);
         navigation.navigate('BreakScreen');
@@ -139,6 +143,9 @@ export const useHomeViewModel = () => {
         setSelectedTask(updatedTask);
         setTasks(prev => prev.map(t => t.id === taskToUpdate.id ? updatedTask : t));
       }
+
+      // Dispara sincronização em background (para fazer upload da imagem em Base64 compactada)
+      SyncService.sync().catch(err => console.error('[ViewModel] Error syncing task summary:', err));
     } catch (error) {
       console.error('[ViewModel] Error updating task summary:', error);
       Alert.alert('Erro', 'Não foi possível salvar a imagem.');
@@ -155,6 +162,9 @@ export const useHomeViewModel = () => {
       await TaskModel.insertTask(user.uid, title, undefined, tagId);
       await fetchTasks();
       closeCreateTaskModal();
+      
+      // Dispara sincronização em background
+      SyncService.sync().catch(err => console.error('[ViewModel] Error syncing new task:', err));
     } catch (error) {
       console.error('useHomeViewModel: Error creating task:', error);
       Alert.alert('Erro', 'Não foi possível salvar a tarefa.');
@@ -166,6 +176,9 @@ export const useHomeViewModel = () => {
     try {
       await TagModel.insertTag(user.uid, name, color);
       await fetchTasks();
+      
+      // Dispara sincronização em background
+      SyncService.sync().catch(err => console.error('[ViewModel] Error syncing new tag:', err));
     } catch (error) {
       console.error('[ViewModel] Error adding tag:', error);
     }
@@ -176,6 +189,9 @@ export const useHomeViewModel = () => {
     try {
       await TagModel.updateTag(user.uid, id, name, color);
       await fetchTasks();
+      
+      // Dispara sincronização em background
+      SyncService.sync().catch(err => console.error('[ViewModel] Error syncing updated tag:', err));
     } catch (error) {
       console.error('[ViewModel] Error updating tag:', error);
     }
@@ -186,6 +202,9 @@ export const useHomeViewModel = () => {
     try {
       await TagModel.deleteTag(user.uid, id);
       await fetchTasks();
+      
+      // Dispara sincronização em background
+      SyncService.sync().catch(err => console.error('[ViewModel] Error syncing deleted tag:', err));
     } catch (error) {
       console.error('[ViewModel] Error deleting tag:', error);
     }
@@ -199,6 +218,9 @@ export const useHomeViewModel = () => {
       if (selectedTask?.id === id) {
         setSelectedTask(null);
       }
+      
+      // Dispara sincronização em background
+      SyncService.sync().catch(err => console.error('[ViewModel] Error syncing deleted task:', err));
     } catch (error) {
       console.error('[ViewModel] Error deleting task:', error);
       Alert.alert('Erro', 'Não foi possível excluir a tarefa.');
