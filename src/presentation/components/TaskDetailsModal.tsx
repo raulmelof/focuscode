@@ -9,8 +9,8 @@ interface TaskDetailsModalProps {
   task: Task | null;
   tag?: Tag;
   onClose: () => void;
-  onAttachSummary: () => void;
-  onChangeTask: () => void;
+  onAttachSummary?: () => void;
+  onChangeTask?: () => void;
 }
 
 export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary, onChangeTask }: TaskDetailsModalProps) => {
@@ -63,34 +63,45 @@ export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary,
               {task.summaryImageUri ? (
                 <View style={styles.imageContainer}>
                   <Image source={{ uri: task.summaryImageUri }} style={styles.summaryImage} />
-                  <TouchableOpacity style={styles.editImageButton} onPress={onAttachSummary}>
-                    <Feather name="camera" size={20} color="#FFFFFF" />
-                    <Text style={styles.editImageText}>Alterar Foto</Text>
-                  </TouchableOpacity>
+                  {onAttachSummary && (
+                    <TouchableOpacity style={styles.editImageButton} onPress={onAttachSummary}>
+                      <Feather name="camera" size={20} color="#FFFFFF" />
+                      <Text style={styles.editImageText}>Alterar Foto</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              ) : task.isCompleted ? (
-                <TouchableOpacity style={styles.attachButton} onPress={onAttachSummary}>
-                  <Feather name="camera" size={24} color="#2A1128" />
-                  <Text style={styles.attachButtonText}>Anexar Resumo</Text>
-                </TouchableOpacity>
+              ) : onAttachSummary ? (
+                task.isCompleted ? (
+                  <TouchableOpacity style={styles.attachButton} onPress={onAttachSummary}>
+                    <Feather name="camera" size={24} color="#2A1128" />
+                    <Text style={styles.attachButtonText}>Anexar Resumo</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.lockedAttachButton}>
+                    <Feather name="lock" size={24} color="#2A1128" style={{ opacity: 0.3 }} />
+                    <Text style={styles.lockedAttachText}>Disponível após concluir o foco</Text>
+                  </View>
+                )
               ) : (
                 <View style={styles.lockedAttachButton}>
-                  <Feather name="lock" size={24} color="#2A1128" style={{ opacity: 0.3 }} />
-                  <Text style={styles.lockedAttachText}>Disponível após concluir o foco</Text>
+                  <Feather name="image" size={24} color="#2A1128" style={{ opacity: 0.3 }} />
+                  <Text style={styles.lockedAttachText}>Nenhum resumo anexado</Text>
                 </View>
               )}
             </View>
 
-            <TouchableOpacity 
-              style={styles.changeTaskButton} 
-              onPress={() => {
-                onClose();
-                onChangeTask();
-              }}
-            >
-              <Feather name="repeat" size={20} color="#2A1128" />
-              <Text style={styles.changeTaskText}>Selecionar outra tarefa</Text>
-            </TouchableOpacity>
+            {onChangeTask && (
+              <TouchableOpacity 
+                style={styles.changeTaskButton} 
+                onPress={() => {
+                  onClose();
+                  onChangeTask();
+                }}
+              >
+                <Feather name="repeat" size={20} color="#2A1128" />
+                <Text style={styles.changeTaskText}>Selecionar outra tarefa</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </View>
       </TouchableOpacity>

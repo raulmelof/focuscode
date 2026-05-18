@@ -114,11 +114,17 @@ const createWebDBAdapter = (): DatabaseConnection => {
       if (sql.includes('isDeleted = 0')) {
         results = results.filter(r => r.isDeleted === 0);
       }
+      if (sql.includes('isCompleted = 1')) {
+        results = results.filter(r => r.isCompleted === 1 || r.isCompleted === true);
+      }
       // Aplica filtro de userId se presente na query
       if (sql.includes('userId = ?')) {
         const userIdParamIndex = params.length - 1;
         const filterUserId = params[userIdParamIndex];
         results = results.filter(r => r.userId === filterUserId);
+      }
+      if (sql.toUpperCase().includes('COUNT(*)')) {
+        return [{ count: results.length }] as unknown as T[];
       }
       return results as T[];
     },
