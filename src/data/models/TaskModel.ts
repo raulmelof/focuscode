@@ -53,4 +53,37 @@ export class TaskModel {
       [now, Number(id), userId ?? null]
     );
   }
+
+  static async getCompletedTasksCount(userId: string): Promise<number> {
+    const db = await getDBConnection();
+    const result = await db.getAllAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ?',
+      [userId]
+    );
+    return result[0]?.count ?? 0;
+  }
+
+  static async getCompletedTasks(userId: string): Promise<Task[]> {
+    const db = await getDBConnection();
+    const allRows = await db.getAllAsync<{
+      id: number;
+      title: string;
+      description: string | null;
+      isCompleted: number;
+      tagId: number | null;
+      summaryImageUri: string | null;
+    }>(
+      'SELECT * FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ?',
+      [userId]
+    );
+
+    return allRows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description ?? undefined,
+      isCompleted: row.isCompleted === 1,
+      tagId: row.tagId ?? undefined,
+      summaryImageUri: row.summaryImageUri ?? undefined
+    }));
+  }
 }

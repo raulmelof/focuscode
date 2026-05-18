@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { AppNavigationProp } from '../../../types/navigation';
 
 import { PomodoroCircle } from '../../components/PomodoroCircle';
 import { TimerDisplay } from '../../components/TimerDisplay';
@@ -14,9 +16,9 @@ import { useHomeViewModel } from './useHomeViewModel';
 import { TaskDetailsModal } from '../../components/TaskDetailsModal';
 import { CameraModal } from '../../components/CameraModal';
 import { FocusSummaryModal } from '../../components/FocusSummaryModal';
-import { signOut } from '../../../services/authService';
 
 export const HomeScreen = () => {
+  const navigation = useNavigation<AppNavigationProp>();
   const { 
     formattedTime, 
     buttonTitle, 
@@ -58,15 +60,10 @@ export const HomeScreen = () => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton} 
-          onPress={async () => {
-            const result = await signOut();
-            if (!result.success) {
-              Alert.alert('Erro', result.error || 'Erro ao sair.');
-            }
-            // AuthContext detecta o logout e redireciona para Login automaticamente
-          }}
+          onPress={() => navigation.navigate('Profile')}
+          testID="home-profile-button"
         >
-          <Feather name="log-out" size={28} color="#2A1128" />
+          <Feather name="user" size={28} color="#2A1128" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>FocusCode</Text>
         {Platform.OS !== 'web' && (

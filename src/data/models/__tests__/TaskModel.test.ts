@@ -94,4 +94,30 @@ describe('TaskModel', () => {
 
     mockDateNow.mockRestore();
   });
+
+  it('should get completed tasks count for userId', async () => {
+    mockGetAllAsync.mockResolvedValueOnce([{ count: 4 }]);
+    const count = await TaskModel.getCompletedTasksCount(TEST_USER_ID);
+    expect(mockGetAllAsync).toHaveBeenCalledWith(
+      'SELECT COUNT(*) as count FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ?',
+      [TEST_USER_ID]
+    );
+    expect(count).toBe(4);
+  });
+
+  it('should get completed tasks for userId', async () => {
+    mockGetAllAsync.mockResolvedValueOnce([
+      { id: 10, title: 'Completed Task', description: 'Done description', isCompleted: 1, tagId: null, summaryImageUri: 'img-uri' }
+    ]);
+    const tasks = await TaskModel.getCompletedTasks(TEST_USER_ID);
+    expect(mockGetAllAsync).toHaveBeenCalledWith(
+      'SELECT * FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ?',
+      [TEST_USER_ID]
+    );
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].id).toBe(10);
+    expect(tasks[0].isCompleted).toBe(true);
+    expect(tasks[0].description).toBe('Done description');
+    expect(tasks[0].summaryImageUri).toBe('img-uri');
+  });
 });

@@ -7,6 +7,7 @@ import { BreakScreen } from '../screens/break/BreakScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
+import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -34,6 +35,11 @@ export const AppStack = () => {
           <Stack.Screen
             name="BreakScreen"
             component={BreakScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
             options={{ headerShown: false }}
           />
         </>
