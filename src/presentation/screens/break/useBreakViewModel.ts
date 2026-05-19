@@ -2,10 +2,12 @@ import { useEffect, useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
+import { useSettings } from '../../../hooks/useSettings';
 
 export const useBreakViewModel = () => {
   const navigation = useNavigation();
-  const BREAK_TIME = 30; 
+  const { settings } = useSettings();
+  const BREAK_TIME = settings.shortBreakMinutes * 60; 
 
   const handleBreakEnd = useCallback(() => {
     navigation.goBack(); 

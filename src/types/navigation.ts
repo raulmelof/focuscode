@@ -8,6 +8,7 @@ export type RootStackParamList = {
   Register: undefined;
   ForgotPassword: undefined;
   Profile: undefined;
+  Settings: undefined;
 };
 
 export type AppNavigationProp = NativeStackNavigationProp<RootStackParamList>;

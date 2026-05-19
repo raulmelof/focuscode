@@ -12,11 +12,13 @@ import { Task } from '../../../types/Task';
 import { Tag } from '../../../types/Tag';
 import { initDB } from '../../../data/database/database';
 import { SyncService } from '../../../services/SyncService';
+import { useSettings } from '../../../hooks/useSettings';
+import { useFocusEffect } from '@react-navigation/native';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { user } = useAuth();
-  const INITIAL_TIME = 1 * 60;
+  const { loadSettings } = useSettings();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -57,6 +59,12 @@ export const useHomeViewModel = () => {
     fetchTasks();
   }, [fetchTasks]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadSettings();
+    }, [loadSettings])
+  );
+
   const handleFocusEnd = useCallback(async () => {
     if (selectedTask && user) {
       try {
@@ -86,6 +94,8 @@ export const useHomeViewModel = () => {
     setIsFocusSummaryModalVisible(false);
     navigation.navigate('BreakScreen');
   }, [navigation]);
+
+  const INITIAL_TIME = selectedTask?.focusTimeMinutes ? selectedTask.focusTimeMinutes * 60 : 25 * 60;
 
   const { timeLeft, isRunning, start, pause } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
@@ -153,13 +163,13 @@ export const useHomeViewModel = () => {
   }, [selectedTask, lastCompletedTask, user, isFocusSummaryModalVisible]);
 
   // Persist new task in SQLite linked to user.uid and reload list
-  const addTask = useCallback(async (title: string, tagId?: number) => {
+  const addTask = useCallback(async (title: string, tagId?: number, focusTimeMinutes?: number) => {
     if (!user) {
       Alert.alert('Erro', 'Nenhum usuario autenticado.');
       return;
     }
     try {
-      await TaskModel.insertTask(user.uid, title, undefined, tagId);
+      await TaskModel.insertTask(user.uid, title, undefined, tagId, focusTimeMinutes ?? 25);
       await fetchTasks();
       closeCreateTaskModal();
       

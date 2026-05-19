@@ -11,28 +11,41 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Tag } from '../../types/Tag';
+import { useSettings } from '../../hooks/useSettings';
 
 interface CreateTaskModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (title: string, tagId?: number) => void;
+  onSave: (title: string, tagId?: number, focusTimeMinutes?: number) => void;
   tags: Tag[];
   onManageTags: () => void;
 }
 
 export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }: CreateTaskModalProps) => {
+  const { settings } = useSettings();
   const [title, setTitle] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<number | undefined>(undefined);
+  const [focusTime, setFocusTime] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  React.useEffect(() => {
+    if (visible && settings?.focusTimeMinutes) {
+      setFocusTime(settings.focusTimeMinutes.toString());
+    }
+  }, [visible, settings]);
 
   const handleSave = () => {
     if (title.trim() === '') {
       return;
     }
     
-    onSave(title, selectedTagId);
+    const parsedTime = parseInt(focusTime, 10);
+    const finalTime = isNaN(parsedTime) || parsedTime <= 0 ? (settings?.focusTimeMinutes ?? 25) : parsedTime;
+    
+    onSave(title, selectedTagId, finalTime);
     setTitle('');
     setSelectedTagId(undefined);
+    setFocusTime(settings?.focusTimeMinutes?.toString() ?? '25');
     setSuccessMessage('Tarefa criada com sucesso!');
     setTimeout(() => setSuccessMessage(''), 3000);
   };
@@ -73,6 +86,17 @@ export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }
               value={title}
               onChangeText={setTitle}
               autoFocus={true}
+            />
+
+            <Text style={styles.label}>Tempo de Foco (minutos)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: 25"
+              placeholderTextColor="rgba(42, 17, 40, 0.4)"
+              value={focusTime}
+              onChangeText={setFocusTime}
+              keyboardType="numeric"
+              maxLength={3}
             />
 
             <View style={styles.tagsHeader}>

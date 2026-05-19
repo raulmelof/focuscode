@@ -3,13 +3,14 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { AppNavigationProp } from '../../../types/navigation';
 import { useProfileViewModel } from './useProfileViewModel';
 import { styles } from './styles';
 import { TaskDetailsModal } from '../../components/TaskDetailsModal';
 import { signOut } from '../../../services/authService';
 
 export const ProfileScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<AppNavigationProp>();
   const {
     user,
     completedCount,

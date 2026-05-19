@@ -66,16 +66,23 @@ export const HomeScreen = () => {
           <Feather name="user" size={28} color="#2A1128" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>FocusCode</Text>
-        {Platform.OS !== 'web' && (
-          <View style={styles.headerRight}>
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Settings')} 
+            style={{ marginRight: Platform.OS !== 'web' ? 12 : 0 }}
+            testID="home-settings-button"
+          >
+            <Feather name="settings" size={24} color="#2A1128" />
+          </TouchableOpacity>
+          {Platform.OS !== 'web' && (
             <Switch
               value={isFlipEnabled}
               onValueChange={setIsFlipEnabled}
               trackColor={{ false: '#767577', true: '#2A1128' }}
               thumbColor={isFlipEnabled ? '#E6D5A7' : '#f4f3f4'}
             />
-          </View>
-        )}
+          )}
+        </View>
       </View>
 
       <View style={styles.container}>

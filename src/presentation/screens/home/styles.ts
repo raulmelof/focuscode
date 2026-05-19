@@ -16,6 +16,8 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     right: 24,
     zIndex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   menuButton: {
     position: 'absolute',

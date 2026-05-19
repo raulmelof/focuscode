@@ -197,6 +197,7 @@ export const initDB = async () => {
           updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
           isDeleted INTEGER DEFAULT 0,
           summaryImageUri TEXT,
+          focusTimeMinutes INTEGER DEFAULT 25,
           FOREIGN KEY (tagId) REFERENCES tags (id)
         );
       `);
@@ -210,7 +211,8 @@ export const initDB = async () => {
         "ALTER TABLE tasks ADD COLUMN userId TEXT;",
         "ALTER TABLE tasks ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000);",
         "ALTER TABLE tasks ADD COLUMN isDeleted INTEGER DEFAULT 0;",
-        "ALTER TABLE tasks ADD COLUMN summaryImageUri TEXT;"
+        "ALTER TABLE tasks ADD COLUMN summaryImageUri TEXT;",
+        "ALTER TABLE tasks ADD COLUMN focusTimeMinutes INTEGER DEFAULT 25;"
       ];
 
       for (const query of alterQueries) {
