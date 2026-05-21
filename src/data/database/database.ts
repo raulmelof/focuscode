@@ -199,6 +199,10 @@ export const initDB = async () => {
           summaryImageUri TEXT,
           FOREIGN KEY (tagId) REFERENCES tags (id)
         );
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        );
       `);
 
       const alterQueries = [
