@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { SettingsService } from '../services/SettingsService';
+import { useAuth } from './AuthContext';
 
 export type ThemeType = 'cafe' | 'robo';
 
@@ -57,13 +58,21 @@ interface ThemeContextData {
 const ThemeContext = createContext<ThemeContextData>({} as ThemeContextData);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [theme, setThemeState] = useState<ThemeType>('cafe');
   const [isLoadingTheme, setIsLoadingTheme] = useState(true);
 
+  // Chave específica do usuário para guardar a configuração individual do perfil
+  const getThemeKey = useCallback(() => {
+    return user ? `currentTheme_${user.uid}` : 'currentTheme_guest';
+  }, [user]);
+
   useEffect(() => {
     const loadTheme = async () => {
+      setIsLoadingTheme(true);
       try {
-        const savedTheme = await SettingsService.getSetting('currentTheme', 'cafe');
+        const key = getThemeKey();
+        const savedTheme = await SettingsService.getSetting(key, 'cafe');
         setThemeState(savedTheme as ThemeType);
       } catch (e) {
         console.error('[ThemeProvider] Erro ao carregar tema:', e);
@@ -73,12 +82,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     loadTheme();
-  }, []);
+  }, [getThemeKey]);
 
   const setTheme = async (newTheme: ThemeType) => {
     try {
       setThemeState(newTheme);
-      await SettingsService.setSetting('currentTheme', newTheme);
+      const key = getThemeKey();
+      await SettingsService.setSetting(key, newTheme);
     } catch (e) {
       console.error('[ThemeProvider] Erro ao salvar tema:', e);
     }
