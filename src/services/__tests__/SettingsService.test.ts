@@ -63,7 +63,7 @@ describe('SettingsService', () => {
 
     beforeAll(() => {
       Platform.OS = 'web';
-      originalLocalStorage = (global as any).localStorage;
+      originalLocalStorage = (globalThis as any).localStorage;
       
       store = {};
       
@@ -80,7 +80,7 @@ describe('SettingsService', () => {
         }),
       };
       
-      Object.defineProperty(global, 'localStorage', {
+      Object.defineProperty(globalThis, 'localStorage', {
         value: mockLocalStorage,
         writable: true,
         configurable: true
@@ -89,9 +89,9 @@ describe('SettingsService', () => {
 
     afterAll(() => {
       if (originalLocalStorage) {
-        (global as any).localStorage = originalLocalStorage;
+        (globalThis as any).localStorage = originalLocalStorage;
       } else {
-        delete (global as any).localStorage;
+        delete (globalThis as any).localStorage;
       }
     });
 
@@ -101,25 +101,25 @@ describe('SettingsService', () => {
     });
 
     it('deve obter uma configuração do localStorage se existir', async () => {
-      global.localStorage.setItem('setting_currentTheme', 'robo');
+      (globalThis as any).localStorage.setItem('setting_currentTheme', 'robo');
 
       const theme = await SettingsService.getSetting('currentTheme', 'cafe');
 
       expect(theme).toBe('robo');
-      expect(global.localStorage.getItem).toHaveBeenCalledWith('setting_currentTheme');
+      expect((globalThis as any).localStorage.getItem).toHaveBeenCalledWith('setting_currentTheme');
     });
 
     it('deve retornar o valor padrão se a configuração não existir no localStorage', async () => {
       const theme = await SettingsService.getSetting('currentTheme', 'cafe');
 
       expect(theme).toBe('cafe');
-      expect(global.localStorage.getItem).toHaveBeenCalledWith('setting_currentTheme');
+      expect((globalThis as any).localStorage.getItem).toHaveBeenCalledWith('setting_currentTheme');
     });
 
     it('deve salvar uma configuração no localStorage', async () => {
       await SettingsService.setSetting('currentTheme', 'robo');
 
-      expect(global.localStorage.setItem).toHaveBeenCalledWith('setting_currentTheme', 'robo');
+      expect((globalThis as any).localStorage.setItem).toHaveBeenCalledWith('setting_currentTheme', 'robo');
       expect(store['setting_currentTheme']).toBe('robo');
     });
   });
