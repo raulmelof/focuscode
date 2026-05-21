@@ -16,9 +16,11 @@ import { useHomeViewModel } from './useHomeViewModel';
 import { TaskDetailsModal } from '../../components/TaskDetailsModal';
 import { CameraModal } from '../../components/CameraModal';
 import { FocusSummaryModal } from '../../components/FocusSummaryModal';
+import { useAppTheme } from '../../../contexts/ThemeContext';
 
 export const HomeScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const { colors } = useAppTheme();
   const { 
     formattedTime, 
     buttonTitle, 
@@ -56,22 +58,22 @@ export const HomeScreen = () => {
     setIsFlipEnabled
   } = useHomeViewModel(); 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton} 
           onPress={() => navigation.navigate('Profile')}
           testID="home-profile-button"
         >
-          <Feather name="user" size={28} color="#2A1128" />
+          <Feather name="user" size={28} color={colors.iconColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>FocusCode</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>FocusCode</Text>
         {Platform.OS !== 'web' && (
           <View style={styles.headerRight}>
             <Switch
               value={isFlipEnabled}
               onValueChange={setIsFlipEnabled}
-              trackColor={{ false: '#767577', true: '#2A1128' }}
+              trackColor={{ false: '#767577', true: colors.accent }}
               thumbColor={isFlipEnabled ? '#E6D5A7' : '#f4f3f4'}
             />
           </View>
@@ -81,15 +83,15 @@ export const HomeScreen = () => {
       <View style={styles.container}>
 
         <TouchableOpacity 
-          style={styles.taskPill} 
+          style={[styles.taskPill, { backgroundColor: colors.pillBg }]} 
           activeOpacity={0.7} 
           onPress={selectedTask ? openTaskDetailsModal : openTaskModal}
           disabled={isTaskModalVisible}
         >
-          <Text style={styles.taskPillText}>
+          <Text style={[styles.taskPillText, { color: colors.text }]}>
             {selectedTask ? selectedTask.title : 'Nenhuma tarefa selecionada'}
           </Text>
-          {selectedTask && <Feather name="info" size={18} color="#2A1128" style={{ marginLeft: 8, opacity: 0.5 }} />}
+          {selectedTask && <Feather name="info" size={18} color={colors.iconColor} style={{ marginLeft: 8, opacity: 0.5 }} />}
         </TouchableOpacity>
 
         <PomodoroCircle progress={progress} />
@@ -98,7 +100,12 @@ export const HomeScreen = () => {
           <TimerDisplay time={formattedTime} />
         </View>
 
-        <PrimaryButton title={buttonTitle} onPress={toggleTimer} />
+        <PrimaryButton 
+          title={buttonTitle} 
+          onPress={toggleTimer} 
+          backgroundColor={colors.primaryButtonBg} 
+          textColor={colors.primaryButtonText}
+        />
       </View>
 
       <TaskSelectionModal 
