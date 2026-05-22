@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -6,12 +7,50 @@ export interface PomodoroSettings {
   focusTimeMinutes: number;
   shortBreakMinutes: number;
   longBreakMinutes: number;
+  isFlipEnabled?: boolean;
 }
 
 const DEFAULT_SETTINGS: PomodoroSettings = {
   focusTimeMinutes: 25,
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
+  isFlipEnabled: Platform.OS !== 'web',
+};
+
+// Robust helper functions that bypass AsyncStorage on Web and handle native failures gracefully
+const getStorageItem = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+    return null;
+  }
+  try {
+    return await AsyncStorage.getItem(key);
+  } catch {
+    console.warn('[Storage] Native AsyncStorage is not available, falling back to localStorage if available.');
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+    return null;
+  }
+};
+
+const setStorageItem = async (key: string, value: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+    return;
+  }
+  try {
+    await AsyncStorage.setItem(key, value);
+  } catch {
+    console.warn('[Storage] Native AsyncStorage is not available, falling back to localStorage if available.');
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  }
 };
 
 export const useSettings = () => {
@@ -32,14 +71,14 @@ export const useSettings = () => {
     }
     
     try {
-      const stored = await AsyncStorage.getItem(key);
+      const stored = await getStorageItem(key);
       if (stored) {
         setSettings(JSON.parse(stored));
       } else {
         setSettings(DEFAULT_SETTINGS);
       }
     } catch (error) {
-      console.error('Error loading settings from AsyncStorage', error);
+      console.error('Error loading settings from storage', error);
     } finally {
       setIsLoading(false);
     }
@@ -54,10 +93,10 @@ export const useSettings = () => {
     if (!key) return;
     
     try {
-      await AsyncStorage.setItem(key, JSON.stringify(newSettings));
+      await setStorageItem(key, JSON.stringify(newSettings));
       setSettings(newSettings);
     } catch (error) {
-      console.error('Error saving settings to AsyncStorage', error);
+      console.error('Error saving settings to storage', error);
       throw error;
     }
   };

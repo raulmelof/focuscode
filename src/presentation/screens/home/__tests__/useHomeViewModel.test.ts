@@ -11,6 +11,25 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     navigate: mockNavigate,
   }),
+  useFocusEffect: (cb: () => void) => {
+    require('react').useEffect(() => {
+      cb();
+    }, []);
+  },
+}));
+
+// Mock useSettings
+jest.mock('../../../../hooks/useSettings', () => ({
+  useSettings: () => ({
+    settings: {
+      focusTimeMinutes: 1,
+      shortBreakMinutes: 5,
+      longBreakMinutes: 15,
+      isFlipEnabled: true,
+    },
+    loadSettings: jest.fn(),
+    saveSettings: jest.fn().mockResolvedValue(true),
+  }),
 }));
 
 // Mock SyncService to prevent real Firebase dependency imports
@@ -112,6 +131,10 @@ describe('useHomeViewModel', () => {
     await waitFor(() => expect(result.current.tasks).toHaveLength(2));
 
     act(() => {
+      result.current.selectTask(MOCK_TASKS[0]);
+    });
+
+    act(() => {
       result.current.toggleTimer();
     });
     expect(result.current.isRunning).toBe(true);
@@ -180,10 +203,16 @@ describe('useHomeViewModel', () => {
       ...MOCK_TASKS,
       { id: 3, title: 'Nova Tarefa Teste', isCompleted: false },
     ];
-    // On second call (after insertTask), return updated list
-    (TaskModel.getTasks as jest.Mock)
-      .mockResolvedValueOnce(MOCK_TASKS)
-      .mockResolvedValueOnce(updatedTasks);
+    
+    let hasInserted = false;
+    (TaskModel.insertTask as jest.Mock).mockImplementationOnce(async () => {
+      hasInserted = true;
+      return 3;
+    });
+    
+    (TaskModel.getTasks as jest.Mock).mockImplementation(() => {
+      return Promise.resolve(hasInserted ? updatedTasks : MOCK_TASKS);
+    });
 
     const { result } = renderHook(() => useHomeViewModel());
 
@@ -198,7 +227,8 @@ describe('useHomeViewModel', () => {
       'test-user-uid-123',
       'Nova Tarefa Teste',
       undefined,
-      1
+      1,
+      25
     );
 
     // List should reload from DB

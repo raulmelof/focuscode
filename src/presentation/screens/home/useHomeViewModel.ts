@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation';
@@ -18,11 +18,16 @@ import { useFocusEffect } from '@react-navigation/native';
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { user } = useAuth();
-  const { loadSettings } = useSettings();
+  const { settings, loadSettings, saveSettings } = useSettings();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  
+  const selectedTaskRef = useRef(selectedTask);
+  useEffect(() => {
+    selectedTaskRef.current = selectedTask;
+  }, [selectedTask]);
   
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
@@ -31,7 +36,19 @@ export const useHomeViewModel = () => {
   const [isCameraModalVisible, setIsCameraModalVisible] = useState(false);
   const [isFocusSummaryModalVisible, setIsFocusSummaryModalVisible] = useState(false);
   const [lastCompletedTask, setLastCompletedTask] = useState<Task | null>(null);
-  const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
+
+  const isFlipEnabled = settings.isFlipEnabled ?? Platform.OS !== 'web';
+  
+  const setIsFlipEnabled = useCallback(async (value: boolean) => {
+    try {
+      await saveSettings({
+        ...settings,
+        isFlipEnabled: value
+      });
+    } catch (err) {
+      console.error('Error saving flip settings from Home:', err);
+    }
+  }, [settings, saveSettings]);
 
   // Load tasks and tags from local DB filtered by logged user
   // When user is null (logout), clear UI cache automatically
@@ -49,6 +66,14 @@ export const useHomeViewModel = () => {
       ]);
       setTasks(localTasks.filter(t => !t.isCompleted));
       setTags(dbTags);
+
+      const currentSelected = selectedTaskRef.current;
+      if (currentSelected) {
+        const updated = localTasks.find(t => t.id === currentSelected.id);
+        if (updated && (updated.focusTimeMinutes !== currentSelected.focusTimeMinutes || updated.title !== currentSelected.title)) {
+          setSelectedTask(updated);
+        }
+      }
     } catch (error) {
       console.error('useHomeViewModel: Error fetching tasks:', error);
     }
@@ -62,7 +87,8 @@ export const useHomeViewModel = () => {
   useFocusEffect(
     useCallback(() => {
       loadSettings();
-    }, [loadSettings])
+      fetchTasks();
+    }, [loadSettings, fetchTasks])
   );
 
   const handleFocusEnd = useCallback(async () => {
@@ -95,7 +121,9 @@ export const useHomeViewModel = () => {
     navigation.navigate('BreakScreen');
   }, [navigation]);
 
-  const INITIAL_TIME = selectedTask?.focusTimeMinutes ? selectedTask.focusTimeMinutes * 60 : 25 * 60;
+  const INITIAL_TIME = selectedTask?.focusTimeMinutes 
+    ? selectedTask.focusTimeMinutes * 60 
+    : (settings?.focusTimeMinutes ? settings.focusTimeMinutes * 60 : 25 * 60);
 
   const { timeLeft, isRunning, start, pause } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
@@ -111,8 +139,15 @@ export const useHomeViewModel = () => {
   useFlipToFocus(isFlipEnabled, isRunning, start, handlePauseFromSensor);
 
   const toggleTimer = useCallback(() => {
+    if (!selectedTask && !isRunning) {
+      Alert.alert(
+        'Selecione uma Tarefa',
+        'Por favor, selecione uma tarefa para iniciar o foco.'
+      );
+      return;
+    }
     if (isRunning) pause(); else start();
-  }, [isRunning, pause, start]);
+  }, [isRunning, pause, start, selectedTask]);
 
   const openTaskModal = useCallback(() => setIsTaskModalVisible(true), []);
   const closeTaskModal = useCallback(() => setIsTaskModalVisible(false), []);
@@ -242,7 +277,7 @@ export const useHomeViewModel = () => {
     isRunning,
     buttonTitle: isRunning ? 'PAUSAR FOCO' : 'INICIAR FOCO',
     toggleTimer,
-    progress: 1 - timeLeft / INITIAL_TIME,
+    progress: Math.max(0, Math.min(1, 1 - timeLeft / INITIAL_TIME)),
     tasks,
     tags,
     selectedTask,

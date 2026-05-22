@@ -11,9 +11,10 @@ interface TaskDetailsModalProps {
   onClose: () => void;
   onAttachSummary?: () => void;
   onChangeTask?: () => void;
+  isRunning?: boolean;
 }
 
-export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary, onChangeTask }: TaskDetailsModalProps) => {
+export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary, onChangeTask, isRunning }: TaskDetailsModalProps) => {
 
   if (!task) return null;
 
@@ -99,14 +100,18 @@ export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary,
 
             {onChangeTask && (
               <TouchableOpacity 
-                style={styles.changeTaskButton} 
+                style={[styles.changeTaskButton, isRunning && { opacity: 0.5 }]} 
+                disabled={isRunning}
                 onPress={() => {
+                  if (isRunning) return;
                   onClose();
                   onChangeTask();
                 }}
               >
-                <Feather name="repeat" size={20} color="#2A1128" />
-                <Text style={styles.changeTaskText}>Selecionar outra tarefa</Text>
+                <Feather name={isRunning ? "lock" : "repeat"} size={20} color="#2A1128" />
+                <Text style={styles.changeTaskText}>
+                  {isRunning ? "Tarefa em andamento (Bloqueada)" : "Selecionar outra tarefa"}
+                </Text>
               </TouchableOpacity>
             )}
           </ScrollView>

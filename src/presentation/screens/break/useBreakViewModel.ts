@@ -32,7 +32,7 @@ export const useBreakViewModel = () => {
   };
 
   const formattedTime = formatTime(timeLeft);
-  const progress = 1 - (timeLeft / BREAK_TIME);
+  const progress = Math.max(0, Math.min(1, 1 - (timeLeft / BREAK_TIME)));
 
   return {
     formattedTime,

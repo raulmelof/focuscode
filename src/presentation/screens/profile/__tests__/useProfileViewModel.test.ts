@@ -35,7 +35,11 @@ describe('useProfileViewModel', () => {
   it('should load completed count and tasks list on mount', async () => {
     (TaskModel.getCompletedTasksCount as jest.Mock).mockResolvedValue(5);
     (TaskModel.getCompletedTasks as jest.Mock).mockResolvedValue([
-      { id: 1, title: 'Concluida 1', isCompleted: true }
+      { id: 1, title: 'Concluida 1', isCompleted: true, focusTimeMinutes: 25 },
+      { id: 2, title: 'Concluida 2', isCompleted: true, focusTimeMinutes: 25 },
+      { id: 3, title: 'Concluida 3', isCompleted: true, focusTimeMinutes: 25 },
+      { id: 4, title: 'Concluida 4', isCompleted: true, focusTimeMinutes: 25 },
+      { id: 5, title: 'Concluida 5', isCompleted: true, focusTimeMinutes: 25 }
     ]);
 
     const { result } = renderHook(() => useProfileViewModel());
@@ -45,7 +49,7 @@ describe('useProfileViewModel', () => {
     });
 
     expect(result.current.completedCount).toBe(5);
-    expect(result.current.completedTasks).toHaveLength(1);
+    expect(result.current.completedTasks).toHaveLength(5);
     expect(result.current.totalFocusTime).toBe(125); // 5 * 25
     expect(TaskModel.getCompletedTasksCount).toHaveBeenCalledWith('test-user-uid-123');
     expect(TaskModel.getCompletedTasks).toHaveBeenCalledWith('test-user-uid-123');

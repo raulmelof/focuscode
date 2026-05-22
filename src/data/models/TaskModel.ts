@@ -55,6 +55,15 @@ export class TaskModel {
     );
   }
 
+  static async updateTaskFocusTime(userId: string, id: number, focusTimeMinutes: number): Promise<void> {
+    const db = await getDBConnection();
+    const now = Date.now();
+    await db.runAsync(
+      'UPDATE tasks SET focusTimeMinutes = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+      [focusTimeMinutes, now, Number(id), userId ?? null]
+    );
+  }
+
   static async getCompletedTasksCount(userId: string): Promise<number> {
     const db = await getDBConnection();
     const result = await db.getAllAsync<{ count: number }>(

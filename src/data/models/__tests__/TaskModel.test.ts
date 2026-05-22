@@ -21,8 +21,8 @@ describe('TaskModel', () => {
     mockRunAsync.mockResolvedValueOnce({ lastInsertRowId: 1 });
     const id = await TaskModel.insertTask(TEST_USER_ID, 'Learn Jest');
     expect(mockRunAsync).toHaveBeenCalledWith(
-      'INSERT INTO tasks (title, description, isCompleted, tagId, userId) VALUES (?, ?, ?, ?, ?)',
-      ['Learn Jest', null, 0, null, TEST_USER_ID]
+      'INSERT INTO tasks (title, description, isCompleted, tagId, userId, focusTimeMinutes) VALUES (?, ?, ?, ?, ?, ?)',
+      ['Learn Jest', null, 0, null, TEST_USER_ID, 25]
     );
     expect(id).toBe(1);
   });
@@ -31,8 +31,8 @@ describe('TaskModel', () => {
     mockRunAsync.mockResolvedValueOnce({ lastInsertRowId: 2 });
     const id = await TaskModel.insertTask(TEST_USER_ID, 'Learn Expo', 'Expo docs', 1);
     expect(mockRunAsync).toHaveBeenCalledWith(
-      'INSERT INTO tasks (title, description, isCompleted, tagId, userId) VALUES (?, ?, ?, ?, ?)',
-      ['Learn Expo', 'Expo docs', 0, 1, TEST_USER_ID]
+      'INSERT INTO tasks (title, description, isCompleted, tagId, userId, focusTimeMinutes) VALUES (?, ?, ?, ?, ?, ?)',
+      ['Learn Expo', 'Expo docs', 0, 1, TEST_USER_ID, 25]
     );
     expect(id).toBe(2);
   });
@@ -78,6 +78,18 @@ describe('TaskModel', () => {
     expect(mockRunAsync).toHaveBeenCalledWith(
       'UPDATE tasks SET isCompleted = ?, updatedAt = ? WHERE id = ? AND userId = ?',
       [0, 1234567890, 2, TEST_USER_ID]
+    );
+
+    mockDateNow.mockRestore();
+  });
+
+  it('should update task focus time with userId guard', async () => {
+    const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+    await TaskModel.updateTaskFocusTime(TEST_USER_ID, 1, 30);
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE tasks SET focusTimeMinutes = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+      [30, 1234567890, 1, TEST_USER_ID]
     );
 
     mockDateNow.mockRestore();
