@@ -15,6 +15,7 @@ jest.mock('../../../../hooks/useSettings', () => ({
       shortBreakMinutes: 0.5,
       longBreakMinutes: 15,
     },
+    isLoading: false,
     loadSettings: jest.fn(),
   }),
 }));

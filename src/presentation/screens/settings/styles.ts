@@ -25,7 +25,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: 24,
   },
   card: {

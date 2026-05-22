@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PomodoroCircle } from '../../components/PomodoroCircle';
 import { TimerDisplay } from '../../components/TimerDisplay';
@@ -7,7 +7,15 @@ import { styles } from './styles';
 import { useBreakViewModel } from './useBreakViewModel';
 
 export const BreakScreen = () => {
-  const { formattedTime, progress, handleSkipBreak } = useBreakViewModel();
+  const { formattedTime, progress, handleSkipBreak, isLoading } = useBreakViewModel();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E6D5A7' }}>
+        <ActivityIndicator size="large" color="#2A1128" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.mainContainer}>

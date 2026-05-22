@@ -6,7 +6,7 @@ import { useSettings } from '../../../hooks/useSettings';
 
 export const useBreakViewModel = () => {
   const navigation = useNavigation();
-  const { settings } = useSettings();
+  const { settings, isLoading } = useSettings();
   const BREAK_TIME = settings.shortBreakMinutes * 60; 
 
   const handleBreakEnd = useCallback(() => {
@@ -19,11 +19,13 @@ export const useBreakViewModel = () => {
   });
 
   useEffect(() => {
-    start();
+    if (!isLoading) {
+      start();
+    }
     
    
     return () => stop(); 
-  }, [start, stop]);
+  }, [start, stop, isLoading]);
 
  
   const handleSkipBreak = () => {
@@ -38,5 +40,6 @@ export const useBreakViewModel = () => {
     formattedTime,
     progress,
     handleSkipBreak,
+    isLoading,
   };
 };
