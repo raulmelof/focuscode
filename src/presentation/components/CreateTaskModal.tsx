@@ -25,27 +25,16 @@ export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }
   const { settings } = useSettings();
   const [title, setTitle] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<number | undefined>(undefined);
-  const [focusTime, setFocusTime] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-
-  React.useEffect(() => {
-    if (visible && settings?.focusTimeMinutes) {
-      setFocusTime(settings.focusTimeMinutes.toString());
-    }
-  }, [visible, settings]);
 
   const handleSave = () => {
     if (title.trim() === '') {
       return;
     }
     
-    const parsedTime = parseInt(focusTime, 10);
-    const finalTime = isNaN(parsedTime) || parsedTime <= 0 ? (settings?.focusTimeMinutes ?? 25) : parsedTime;
-    
-    onSave(title, selectedTagId, finalTime);
+    onSave(title, selectedTagId, settings?.focusTimeMinutes ?? 25);
     setTitle('');
     setSelectedTagId(undefined);
-    setFocusTime(settings?.focusTimeMinutes?.toString() ?? '25');
     setSuccessMessage('Tarefa criada com sucesso!');
     setTimeout(() => setSuccessMessage(''), 3000);
   };
@@ -88,16 +77,7 @@ export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }
               autoFocus={true}
             />
 
-            <Text style={styles.label}>Tempo de Foco (minutos)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: 25"
-              placeholderTextColor="rgba(42, 17, 40, 0.4)"
-              value={focusTime}
-              onChangeText={setFocusTime}
-              keyboardType="numeric"
-              maxLength={3}
-            />
+
 
             <View style={styles.tagsHeader}>
               <Text style={styles.label}>Tag (Categoria)</Text>

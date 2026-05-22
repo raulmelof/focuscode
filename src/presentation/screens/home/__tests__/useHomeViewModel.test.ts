@@ -30,6 +30,9 @@ jest.mock('../../../../hooks/useSettings', () => ({
     loadSettings: jest.fn(),
     saveSettings: jest.fn().mockResolvedValue(true),
   }),
+  getGlobalIsFlipEnabled: () => true,
+  setGlobalIsFlipEnabled: jest.fn(),
+  flipListeners: new Set(),
 }));
 
 // Mock SyncService to prevent real Firebase dependency imports

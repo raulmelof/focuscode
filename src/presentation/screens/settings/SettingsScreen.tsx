@@ -1,73 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { styles } from './styles';
-import { useSettings } from '../../../hooks/useSettings';
+import { useSettings, getGlobalIsFlipEnabled, setGlobalIsFlipEnabled, flipListeners } from '../../../hooks/useSettings';
 import { useAuth } from '../../../contexts/AuthContext';
-import { TaskModel } from '../../../data/models/TaskModel';
-import { SyncService } from '../../../services/SyncService';
-import { Task } from '../../../types/Task';
 import { RootStackParamList } from '../../../types/navigation';
 
 export const SettingsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, 'Settings'>>();
-  const { isRunning, selectedTaskId } = route.params || {};
+  const { isRunning } = route.params || {};
   const { settings, saveSettings, isLoading } = useSettings();
   const { user } = useAuth();
 
+  const [focusTime, setFocusTime] = useState('');
   const [shortBreak, setShortBreak] = useState('');
   const [longBreak, setLongBreak] = useState('');
-  const [isFlipEnabled, setIsFlipEnabled] = useState(Platform.OS !== 'web');
+  const [isFlipEnabled, setIsFlipEnabledState] = useState(getGlobalIsFlipEnabled());
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [taskTimes, setTaskTimes] = useState<Record<number, string>>({});
-  const [loadingTasks, setLoadingTasks] = useState(true);
+  useEffect(() => {
+    const listener = (val: boolean) => {
+      setIsFlipEnabledState(val);
+    };
+    flipListeners.add(listener);
+    return () => {
+      flipListeners.delete(listener);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !hasInitialized) {
+      setFocusTime(settings.focusTimeMinutes.toString());
       setShortBreak(settings.shortBreakMinutes.toString());
       setLongBreak(settings.longBreakMinutes.toString());
-      setIsFlipEnabled(settings.isFlipEnabled ?? Platform.OS !== 'web');
       setHasInitialized(true);
     }
   }, [settings, isLoading, hasInitialized]);
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      if (!user) {
-        setLoadingTasks(false);
-        return;
-      }
-      try {
-        const activeTasks = await TaskModel.getTasks(user.uid);
-        
-        // Only load and configure the selected task
-        if (selectedTaskId) {
-          const selected = activeTasks.filter(task => task.id === selectedTaskId);
-          setTasks(selected);
-          
-          const times: Record<number, string> = {};
-          selected.forEach(task => {
-            times[task.id] = (task.focusTimeMinutes ?? settings.focusTimeMinutes ?? 25).toString();
-          });
-          setTaskTimes(times);
-        } else {
-          setTasks([]);
-          setTaskTimes({});
-        }
-      } catch (error) {
-        console.error('Error fetching tasks for settings:', error);
-      } finally {
-        setLoadingTasks(false);
-      }
-    };
-
-    fetchTasks();
-  }, [user, settings.focusTimeMinutes, selectedTaskId]);
+  const handleFocusTimeChange = (text: string) => {
+    setFocusTime(text);
+    const parsed = parseInt(text, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
+      saveSettings({
+        ...settings,
+        focusTimeMinutes: parsed,
+      }).catch(err => console.error('Error saving focus time settings:', err));
+    }
+  };
 
   const handleShortBreakChange = (text: string) => {
     setShortBreak(text);
@@ -92,25 +74,7 @@ export const SettingsScreen = () => {
   };
 
   const handleFlipToggle = (value: boolean) => {
-    setIsFlipEnabled(value);
-    saveSettings({
-      ...settings,
-      isFlipEnabled: value,
-    }).catch(err => console.error('Error saving flip settings:', err));
-  };
-
-  const handleTaskTimeChange = (taskId: number, text: string) => {
-    setTaskTimes(prev => ({ ...prev, [taskId]: text }));
-    const parsed = parseInt(text, 10);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
-      if (user) {
-        TaskModel.updateTaskFocusTime(user.uid, taskId, parsed)
-          .then(() => {
-            SyncService.sync().catch(err => console.error('[Settings] Error syncing after focus times save:', err));
-          })
-          .catch(err => console.error('Error updating task focus time:', err));
-      }
-    }
+    setGlobalIsFlipEnabled(value);
   };
 
   if (isLoading) {
@@ -140,7 +104,32 @@ export const SettingsScreen = () => {
 
         <ScrollView contentContainerStyle={styles.container}>
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Configurações de Pausa</Text>
+            <Text style={styles.sectionTitle}>Configurações de Tempo</Text>
+
+            <View style={styles.settingRow}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <Text style={[styles.settingLabel, isRunning && { opacity: 0.6 }, { marginBottom: 0 }]}>Tempo de Foco</Text>
+                {isRunning && (
+                  <Text style={{ fontSize: 10, color: '#C84B31', fontWeight: '600' }}>
+                    Timer em andamento (Bloqueado)
+                  </Text>
+                )}
+              </View>
+              <View style={[styles.inputContainer, isRunning && { backgroundColor: 'rgba(42, 17, 40, 0.05)', opacity: 0.6 }]}>
+                <TextInput
+                  style={[styles.input, isRunning && { color: 'rgba(42, 17, 40, 0.5)' }]}
+                  value={focusTime}
+                  onChangeText={handleFocusTimeChange}
+                  keyboardType="numeric"
+                  maxLength={3}
+                  editable={!isRunning}
+                />
+                <Text style={styles.unitText}>min</Text>
+                {isRunning && (
+                  <Feather name="lock" size={14} color="#C84B31" style={{ marginRight: 16 }} />
+                )}
+              </View>
+            </View>
 
             <View style={styles.settingRow}>
               <Text style={styles.settingLabel}>Pausa Curta</Text>
@@ -171,73 +160,48 @@ export const SettingsScreen = () => {
             </View>
           </View>
 
-          {/* Selected Task Focus Time */}
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Tempo de Foco da Tarefa Selecionada</Text>
-            
-            {loadingTasks ? (
-              <ActivityIndicator size="small" color="#2A1128" style={{ marginVertical: 12 }} />
-            ) : tasks.length === 0 ? (
-              <Text style={{ fontSize: 14, color: 'rgba(42, 17, 40, 0.6)', fontStyle: 'italic', marginVertical: 8 }}>
-                Nenhuma tarefa selecionada.
-              </Text>
-            ) : (
-              tasks.map(task => {
-                const isLocked = isRunning && task.id === selectedTaskId;
-                return (
-                  <View key={task.id} style={styles.settingRow}>
-                    <View style={{ flex: 1, marginRight: 12 }}>
-                      <Text style={[styles.settingLabel, isLocked && { opacity: 0.6 }]} numberOfLines={1}>
-                        {task.title}
-                      </Text>
-                      {isLocked && (
-                        <Text style={{ fontSize: 10, color: '#C84B31', fontWeight: '600', marginTop: 2 }}>
-                          Tarefa em andamento (Bloqueado)
-                        </Text>
-                      )}
-                    </View>
-                    <View style={[styles.inputContainer, isLocked && { backgroundColor: 'rgba(42, 17, 40, 0.05)', opacity: 0.6 }]}>
-                      <TextInput
-                        style={[styles.input, isLocked && { color: 'rgba(42, 17, 40, 0.5)' }]}
-                        value={taskTimes[task.id] || ''}
-                        onChangeText={(text) => {
-                          if (isLocked) return;
-                          handleTaskTimeChange(task.id, text);
-                        }}
-                        keyboardType="numeric"
-                        maxLength={3}
-                        editable={!isLocked}
-                      />
-                      <Text style={styles.unitText}>min</Text>
-                      {isLocked && (
-                        <Feather name="lock" size={14} color="#C84B31" style={{ marginLeft: 6 }} />
-                      )}
-                    </View>
-                  </View>
-                );
-              })
-            )}
-          </View>
-
-          {Platform.OS !== 'web' && (
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Sensores do Dispositivo</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flex: 1, marginRight: 16 }}>
-                  <Text style={styles.settingLabel}>Virar para Focar</Text>
-                  <Text style={{ fontSize: 12, color: 'rgba(42, 17, 40, 0.6)', marginTop: 4 }}>
-                    Inicia o timer automaticamente ao colocar o celular com a tela virada para baixo.
-                  </Text>
-                </View>
-                <Switch
-                  value={isFlipEnabled}
-                  onValueChange={handleFlipToggle}
-                  trackColor={{ false: '#767577', true: '#2A1128' }}
-                  thumbColor={isFlipEnabled ? '#E6D5A7' : '#f4f3f4'}
-                />
+            <Text style={styles.sectionTitle}>Sensores do Dispositivo</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, marginRight: 16 }}>
+                <Text style={styles.settingLabel}>Virar para Focar</Text>
+                <Text style={{ fontSize: 12, color: 'rgba(42, 17, 40, 0.6)', marginTop: 4 }}>
+                  Inicia o timer automaticamente ao colocar o celular com a tela virada para baixo.
+                </Text>
               </View>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => handleFlipToggle(!isFlipEnabled)}
+                style={{
+                  width: 52,
+                  height: 28,
+                  borderRadius: 14,
+                  backgroundColor: isFlipEnabled ? '#2A1128' : 'rgba(42, 17, 40, 0.1)',
+                  padding: 2,
+                  justifyContent: 'center',
+                  borderWidth: 1.5,
+                  borderColor: '#2A1128',
+                }}
+              >
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: '#E6D5A7',
+                    alignSelf: isFlipEnabled ? 'flex-end' : 'flex-start',
+                    borderWidth: 1.5,
+                    borderColor: '#2A1128',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 1,
+                    elevation: 1,
+                  }}
+                />
+              </TouchableOpacity>
             </View>
-          )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

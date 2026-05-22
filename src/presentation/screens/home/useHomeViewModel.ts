@@ -12,23 +12,23 @@ import { Task } from '../../../types/Task';
 import { Tag } from '../../../types/Tag';
 import { initDB } from '../../../data/database/database';
 import { SyncService } from '../../../services/SyncService';
-import { useSettings } from '../../../hooks/useSettings';
+import { useSettings, getGlobalIsFlipEnabled, setGlobalIsFlipEnabled, flipListeners } from '../../../hooks/useSettings';
 import { useFocusEffect } from '@react-navigation/native';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { user } = useAuth();
-  const { settings, loadSettings, saveSettings } = useSettings();
+  const { settings, loadSettings, saveSettings, isLoading } = useSettings();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  
+
   const selectedTaskRef = useRef(selectedTask);
   useEffect(() => {
     selectedTaskRef.current = selectedTask;
   }, [selectedTask]);
-  
+
   const [isTaskModalVisible, setIsTaskModalVisible] = useState(false);
   const [isCreateTaskModalVisible, setIsCreateTaskModalVisible] = useState(false);
   const [isManageTagsModalVisible, setIsManageTagsModalVisible] = useState(false);
@@ -37,18 +37,21 @@ export const useHomeViewModel = () => {
   const [isFocusSummaryModalVisible, setIsFocusSummaryModalVisible] = useState(false);
   const [lastCompletedTask, setLastCompletedTask] = useState<Task | null>(null);
 
-  const isFlipEnabled = settings.isFlipEnabled ?? Platform.OS !== 'web';
-  
-  const setIsFlipEnabled = useCallback(async (value: boolean) => {
-    try {
-      await saveSettings({
-        ...settings,
-        isFlipEnabled: value
-      });
-    } catch (err) {
-      console.error('Error saving flip settings from Home:', err);
-    }
-  }, [settings, saveSettings]);
+  const [isFlipEnabled, setIsFlipEnabledState] = useState(getGlobalIsFlipEnabled());
+
+  useEffect(() => {
+    const listener = (val: boolean) => {
+      setIsFlipEnabledState(val);
+    };
+    flipListeners.add(listener);
+    return () => {
+      flipListeners.delete(listener);
+    };
+  }, []);
+
+  const setIsFlipEnabled = useCallback((value: boolean) => {
+    setGlobalIsFlipEnabled(value);
+  }, []);
 
   // Load tasks and tags from local DB filtered by logged user
   // When user is null (logout), clear UI cache automatically
@@ -94,17 +97,20 @@ export const useHomeViewModel = () => {
   const handleFocusEnd = useCallback(async () => {
     if (selectedTask && user) {
       try {
-        const completedTask = { ...selectedTask, isCompleted: true };
+        // Salva o tempo de foco usado da configuração atual na tarefa
+        await TaskModel.updateTaskFocusTime(user.uid, selectedTask.id, settings.focusTimeMinutes);
+
+        const completedTask = { ...selectedTask, isCompleted: true, focusTimeMinutes: settings.focusTimeMinutes };
         setLastCompletedTask(completedTask);
         await TaskModel.updateTaskStatus(user.uid, selectedTask.id, true);
-        
+
         // Remove da lista de ativos
         setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
         setSelectedTask(null);
-        
+
         // Em vez de navegar direto, mostra o modal de resumo
         setIsFocusSummaryModalVisible(true);
-        
+
         // Dispara sincronização em background
         SyncService.sync().catch(err => console.error('[ViewModel] Error syncing completed task:', err));
       } catch (error) {
@@ -114,18 +120,16 @@ export const useHomeViewModel = () => {
     } else {
       navigation.navigate('BreakScreen');
     }
-  }, [navigation, selectedTask, user]);
+  }, [navigation, selectedTask, user, settings]);
 
   const goToBreak = useCallback(() => {
     setIsFocusSummaryModalVisible(false);
     navigation.navigate('BreakScreen');
   }, [navigation]);
 
-  const INITIAL_TIME = selectedTask?.focusTimeMinutes 
-    ? selectedTask.focusTimeMinutes * 60 
-    : (settings?.focusTimeMinutes ? settings.focusTimeMinutes * 60 : 25 * 60);
+  const INITIAL_TIME = settings?.focusTimeMinutes ? settings.focusTimeMinutes * 60 : 25 * 60;
 
-  const { timeLeft, isRunning, start, pause } = usePomodoro({
+  const { timeLeft, isRunning, start, pause, resetTimer } = usePomodoro({
     initialTimeInSeconds: INITIAL_TIME,
     onFocusEnd: () => handleFocusEnd(),
   });
@@ -151,11 +155,12 @@ export const useHomeViewModel = () => {
 
   const openTaskModal = useCallback(() => setIsTaskModalVisible(true), []);
   const closeTaskModal = useCallback(() => setIsTaskModalVisible(false), []);
-  
+
   const selectTask = useCallback((task: Task) => {
     setSelectedTask(task);
+    resetTimer();
     closeTaskModal();
-  }, [closeTaskModal]);
+  }, [closeTaskModal, resetTimer]);
 
   const openCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(true), []);
   const closeCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(false), []);
@@ -171,17 +176,17 @@ export const useHomeViewModel = () => {
 
   const handleCaptureSummary = useCallback(async (uri: string) => {
     const taskToUpdate = isFocusSummaryModalVisible ? lastCompletedTask : selectedTask;
-    
+
     if (!taskToUpdate || !user || !taskToUpdate.id) {
       console.error('[ViewModel] Missing data for summary update');
       return;
     }
-    
+
     try {
       await TaskModel.updateTaskSummary(user.uid, taskToUpdate.id, uri);
-      
+
       const updatedTask = { ...taskToUpdate, summaryImageUri: uri };
-      
+
       if (isFocusSummaryModalVisible) {
         setLastCompletedTask(updatedTask);
       } else {
@@ -207,7 +212,7 @@ export const useHomeViewModel = () => {
       await TaskModel.insertTask(user.uid, title, undefined, tagId, focusTimeMinutes ?? 25);
       await fetchTasks();
       closeCreateTaskModal();
-      
+
       // Dispara sincronização em background
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing new task:', err));
     } catch (error) {
@@ -221,7 +226,7 @@ export const useHomeViewModel = () => {
     try {
       await TagModel.insertTag(user.uid, name, color);
       await fetchTasks();
-      
+
       // Dispara sincronização em background
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing new tag:', err));
     } catch (error) {
@@ -234,7 +239,7 @@ export const useHomeViewModel = () => {
     try {
       await TagModel.updateTag(user.uid, id, name, color);
       await fetchTasks();
-      
+
       // Dispara sincronização em background
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing updated tag:', err));
     } catch (error) {
@@ -247,7 +252,7 @@ export const useHomeViewModel = () => {
     try {
       await TagModel.deleteTag(user.uid, id);
       await fetchTasks();
-      
+
       // Dispara sincronização em background
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing deleted tag:', err));
     } catch (error) {
@@ -263,7 +268,7 @@ export const useHomeViewModel = () => {
       if (selectedTask?.id === id) {
         setSelectedTask(null);
       }
-      
+
       // Dispara sincronização em background
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing deleted task:', err));
     } catch (error) {
@@ -310,4 +315,4 @@ export const useHomeViewModel = () => {
     setIsFlipEnabled,
   };
 };
-
+

@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
   focusTimeMinutes: 25,
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
-  isFlipEnabled: Platform.OS !== 'web',
+  isFlipEnabled: true,
 };
 
 // Robust helper functions that bypass AsyncStorage on Web and handle native failures gracefully
@@ -28,7 +28,6 @@ const getStorageItem = async (key: string): Promise<string | null> => {
   try {
     return await AsyncStorage.getItem(key);
   } catch {
-    console.warn('[Storage] Native AsyncStorage is not available, falling back to localStorage if available.');
     if (typeof window !== 'undefined' && window.localStorage) {
       return window.localStorage.getItem(key);
     }
@@ -46,15 +45,24 @@ const setStorageItem = async (key: string, value: string): Promise<void> => {
   try {
     await AsyncStorage.setItem(key, value);
   } catch {
-    console.warn('[Storage] Native AsyncStorage is not available, falling back to localStorage if available.');
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem(key, value);
     }
   }
 };
 
+// Global in-memory reactive state for Flip to Focus switch
+let globalIsFlipEnabled = true;
+export const flipListeners = new Set<(val: boolean) => void>();
+
+export const getGlobalIsFlipEnabled = () => globalIsFlipEnabled;
+export const setGlobalIsFlipEnabled = (val: boolean) => {
+  globalIsFlipEnabled = val;
+  flipListeners.forEach(l => l(val));
+};
+
 export const useSettings = () => {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [settings, setSettings] = useState<PomodoroSettings>(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -63,6 +71,11 @@ export const useSettings = () => {
   }, [user]);
 
   const loadSettings = useCallback(async () => {
+    if (isAuthLoading) {
+      setIsLoading(true);
+      return;
+    }
+
     const key = getStorageKey();
     if (!key) {
       setSettings(DEFAULT_SETTINGS);
@@ -70,6 +83,7 @@ export const useSettings = () => {
       return;
     }
     
+    setIsLoading(true);
     try {
       const stored = await getStorageItem(key);
       if (stored) {
@@ -82,7 +96,7 @@ export const useSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [getStorageKey]);
+  }, [getStorageKey, isAuthLoading]);
 
   useEffect(() => {
     loadSettings();

@@ -23,7 +23,10 @@ export const useFlipToFocus = (
   }, [isRunning, isActive]);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      Accelerometer.removeAllListeners();
+      return;
+    }
 
     let subscription: ReturnType<typeof Accelerometer.addListener> | null = null;
 
@@ -53,6 +56,7 @@ export const useFlipToFocus = (
       if (subscription) {
         subscription.remove();
       }
+      Accelerometer.removeAllListeners();
     };
   }, [isActive, isRunning, runningSince, onStart, onPause]);
 };
