@@ -71,6 +71,9 @@ export const setGlobalSettings = (val: PomodoroSettings) => {
   settingsListeners.forEach(l => l(val));
 };
 
+// Track if we already loaded settings for a specific key from disk
+let hasLoadedSettingsForKey: string | null = null;
+
 export const useSettings = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [settings, setSettingsState] = useState<PomodoroSettings>(globalSettings);
@@ -90,7 +93,7 @@ export const useSettings = () => {
     };
   }, []);
 
-  const loadSettings = useCallback(async () => {
+  const loadSettings = useCallback(async (force = false) => {
     if (isAuthLoading) {
       setIsLoading(true);
       return;
@@ -103,6 +106,12 @@ export const useSettings = () => {
       return;
     }
     
+    // Prevent redundant disk reads which can overwrite in-memory state if AsyncStorage is delayed/broken
+    if (!force && hasLoadedSettingsForKey === key) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const stored = await getStorageItem(key);
@@ -118,6 +127,7 @@ export const useSettings = () => {
         globalIsFlipEnabled = DEFAULT_SETTINGS.isFlipEnabled ?? true;
         flipListeners.forEach(l => l(globalIsFlipEnabled));
       }
+      hasLoadedSettingsForKey = key;
     } catch (error) {
       console.error('Error loading settings from storage', error);
     } finally {
