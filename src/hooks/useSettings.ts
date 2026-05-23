@@ -61,14 +61,34 @@ export const setGlobalIsFlipEnabled = (val: boolean) => {
   flipListeners.forEach(l => l(val));
 };
 
+// Global in-memory reactive state for Pomodoro Settings
+let globalSettings: PomodoroSettings = { ...DEFAULT_SETTINGS };
+export const settingsListeners = new Set<(val: PomodoroSettings) => void>();
+
+export const getGlobalSettings = () => globalSettings;
+export const setGlobalSettings = (val: PomodoroSettings) => {
+  globalSettings = val;
+  settingsListeners.forEach(l => l(val));
+};
+
 export const useSettings = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [settings, setSettings] = useState<PomodoroSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettingsState] = useState<PomodoroSettings>(globalSettings);
   const [isLoading, setIsLoading] = useState(true);
 
   const getStorageKey = useCallback(() => {
-    return user ? `@settings_${user.uid}` : null;
+    return user ? `@settings_${user.uid}` : '@settings_guest';
   }, [user]);
+
+  useEffect(() => {
+    const listener = (newSettings: PomodoroSettings) => {
+      setSettingsState(newSettings);
+    };
+    settingsListeners.add(listener);
+    return () => {
+      settingsListeners.delete(listener);
+    };
+  }, []);
 
   const loadSettings = useCallback(async () => {
     if (isAuthLoading) {
@@ -78,7 +98,7 @@ export const useSettings = () => {
 
     const key = getStorageKey();
     if (!key) {
-      setSettings(DEFAULT_SETTINGS);
+      setGlobalSettings(DEFAULT_SETTINGS);
       setIsLoading(false);
       return;
     }
@@ -87,9 +107,16 @@ export const useSettings = () => {
     try {
       const stored = await getStorageItem(key);
       if (stored) {
-        setSettings(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setGlobalSettings(parsed);
+        if (parsed && typeof parsed.isFlipEnabled === 'boolean') {
+          globalIsFlipEnabled = parsed.isFlipEnabled;
+          flipListeners.forEach(l => l(parsed.isFlipEnabled));
+        }
       } else {
-        setSettings(DEFAULT_SETTINGS);
+        setGlobalSettings(DEFAULT_SETTINGS);
+        globalIsFlipEnabled = DEFAULT_SETTINGS.isFlipEnabled ?? true;
+        flipListeners.forEach(l => l(globalIsFlipEnabled));
       }
     } catch (error) {
       console.error('Error loading settings from storage', error);
@@ -107,8 +134,12 @@ export const useSettings = () => {
     if (!key) return;
     
     try {
+      setGlobalSettings(newSettings);
       await setStorageItem(key, JSON.stringify(newSettings));
-      setSettings(newSettings);
+      if (typeof newSettings.isFlipEnabled === 'boolean') {
+        globalIsFlipEnabled = newSettings.isFlipEnabled;
+        flipListeners.forEach(l => l(newSettings.isFlipEnabled!));
+      }
     } catch (error) {
       console.error('Error saving settings to storage', error);
       throw error;

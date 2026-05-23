@@ -19,7 +19,6 @@ export const SettingsScreen = () => {
   const [shortBreak, setShortBreak] = useState('');
   const [longBreak, setLongBreak] = useState('');
   const [isFlipEnabled, setIsFlipEnabledState] = useState(getGlobalIsFlipEnabled());
-  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
     const listener = (val: boolean) => {
@@ -32,13 +31,12 @@ export const SettingsScreen = () => {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !hasInitialized) {
+    if (!isLoading) {
       setFocusTime(settings.focusTimeMinutes.toString());
       setShortBreak(settings.shortBreakMinutes.toString());
       setLongBreak(settings.longBreakMinutes.toString());
-      setHasInitialized(true);
     }
-  }, [settings, isLoading, hasInitialized]);
+  }, [isLoading]);
 
   const handleFocusTimeChange = (text: string) => {
     setFocusTime(text);
@@ -48,6 +46,18 @@ export const SettingsScreen = () => {
         ...settings,
         focusTimeMinutes: parsed,
       }).catch(err => console.error('Error saving focus time settings:', err));
+    }
+  };
+
+  const handleFocusTimeSave = () => {
+    const parsed = parseInt(focusTime, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
+      saveSettings({
+        ...settings,
+        focusTimeMinutes: parsed,
+      }).catch(err => console.error('Error saving focus time settings:', err));
+    } else {
+      setFocusTime(settings.focusTimeMinutes.toString());
     }
   };
 
@@ -62,6 +72,18 @@ export const SettingsScreen = () => {
     }
   };
 
+  const handleShortBreakSave = () => {
+    const parsed = parseInt(shortBreak, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
+      saveSettings({
+        ...settings,
+        shortBreakMinutes: parsed,
+      }).catch(err => console.error('Error saving short break settings:', err));
+    } else {
+      setShortBreak(settings.shortBreakMinutes.toString());
+    }
+  };
+
   const handleLongBreakChange = (text: string) => {
     setLongBreak(text);
     const parsed = parseInt(text, 10);
@@ -73,8 +95,24 @@ export const SettingsScreen = () => {
     }
   };
 
+  const handleLongBreakSave = () => {
+    const parsed = parseInt(longBreak, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
+      saveSettings({
+        ...settings,
+        longBreakMinutes: parsed,
+      }).catch(err => console.error('Error saving long break settings:', err));
+    } else {
+      setLongBreak(settings.longBreakMinutes.toString());
+    }
+  };
+
   const handleFlipToggle = (value: boolean) => {
     setGlobalIsFlipEnabled(value);
+    saveSettings({
+      ...settings,
+      isFlipEnabled: value,
+    }).catch(err => console.error('Error saving flip settings:', err));
   };
 
   if (isLoading) {
@@ -120,6 +158,7 @@ export const SettingsScreen = () => {
                   style={[styles.input, isRunning && { color: 'rgba(42, 17, 40, 0.5)' }]}
                   value={focusTime}
                   onChangeText={handleFocusTimeChange}
+                  onBlur={handleFocusTimeSave}
                   keyboardType="numeric"
                   maxLength={3}
                   editable={!isRunning}
@@ -138,6 +177,7 @@ export const SettingsScreen = () => {
                   style={styles.input}
                   value={shortBreak}
                   onChangeText={handleShortBreakChange}
+                  onBlur={handleShortBreakSave}
                   keyboardType="numeric"
                   maxLength={3}
                 />
@@ -152,6 +192,7 @@ export const SettingsScreen = () => {
                   style={styles.input}
                   value={longBreak}
                   onChangeText={handleLongBreakChange}
+                  onBlur={handleLongBreakSave}
                   keyboardType="numeric"
                   maxLength={3}
                 />

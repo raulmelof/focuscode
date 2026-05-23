@@ -59,12 +59,14 @@ export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary,
               </Text>
             </View>
 
-            <View style={styles.infoSection}>
-              <Text style={styles.label}>Tempo de Foco</Text>
-              <Text style={styles.status}>
-                {task.focusTimeMinutes ?? 25} minutos
-              </Text>
-            </View>
+            {task.isCompleted && (
+              <View style={styles.infoSection}>
+                <Text style={styles.label}>Tempo de Foco</Text>
+                <Text style={styles.status}>
+                  {task.focusTimeMinutes ?? 25} minutos
+                </Text>
+              </View>
+            )}
 
             <View style={styles.summarySection}>
               <Text style={styles.label}>Resumo / Evidência</Text>

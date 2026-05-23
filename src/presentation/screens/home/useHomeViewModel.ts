@@ -89,9 +89,8 @@ export const useHomeViewModel = () => {
 
   useFocusEffect(
     useCallback(() => {
-      loadSettings();
       fetchTasks();
-    }, [loadSettings, fetchTasks])
+    }, [fetchTasks])
   );
 
   const handleFocusEnd = useCallback(async () => {
