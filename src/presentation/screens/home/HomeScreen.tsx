@@ -16,9 +16,11 @@ import { useHomeViewModel } from './useHomeViewModel';
 import { TaskDetailsModal } from '../../components/TaskDetailsModal';
 import { CameraModal } from '../../components/CameraModal';
 import { FocusSummaryModal } from '../../components/FocusSummaryModal';
+import { useAppTheme } from '../../../contexts/ThemeContext';
 
 export const HomeScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
+  const { colors } = useAppTheme();
   const { 
     formattedTime, 
     isRunning,
@@ -54,23 +56,26 @@ export const HomeScreen = () => {
     lastCompletedTask,
     goToBreak,
   } = useHomeViewModel(); 
+  
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton} 
           onPress={() => navigation.navigate('Profile')}
           testID="home-profile-button"
         >
-          <Feather name="user" size={28} color="#2A1128" />
+          <Feather name="user" size={28} color={colors.iconColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>FocusCode</Text>
+        
+        <Text style={[styles.headerTitle, { color: colors.text }]}>FocusCode</Text>
+        
         <View style={styles.headerRight}>
           <TouchableOpacity 
             onPress={() => navigation.navigate('Settings', { isRunning, selectedTaskId: selectedTask?.id })} 
             testID="home-settings-button"
           >
-            <Feather name="settings" size={24} color="#2A1128" />
+            <Feather name="settings" size={24} color={colors.iconColor} />
           </TouchableOpacity>
         </View>
       </View>
@@ -78,7 +83,7 @@ export const HomeScreen = () => {
       <View style={styles.container}>
 
         <TouchableOpacity 
-          style={[styles.taskPill, isRunning && { opacity: 0.85 }]} 
+          style={[styles.taskPill, { backgroundColor: colors.pillBg }, isRunning && { opacity: 0.85 }]} 
           activeOpacity={0.7} 
           onPress={() => {
             if (isRunning) {
@@ -96,13 +101,13 @@ export const HomeScreen = () => {
           }}
           disabled={isTaskModalVisible}
         >
-          <Text style={styles.taskPillText}>
+          <Text style={[styles.taskPillText, { color: colors.text }]}>
             {selectedTask ? selectedTask.title : 'Nenhuma tarefa selecionada'}
           </Text>
           {isRunning ? (
-            <Feather name="lock" size={18} color="#2A1128" style={{ marginLeft: 8, opacity: 0.6 }} />
+            <Feather name="lock" size={18} color={colors.iconColor} style={{ marginLeft: 8, opacity: 0.6 }} />
           ) : (
-            selectedTask && <Feather name="info" size={18} color="#2A1128" style={{ marginLeft: 8, opacity: 0.5 }} />
+            selectedTask && <Feather name="info" size={18} color={colors.iconColor} style={{ marginLeft: 8, opacity: 0.5 }} />
           )}
         </TouchableOpacity>
 
@@ -112,7 +117,12 @@ export const HomeScreen = () => {
           <TimerDisplay time={formattedTime} />
         </View>
 
-        <PrimaryButton title={buttonTitle} onPress={toggleTimer} />
+        <PrimaryButton 
+          title={buttonTitle} 
+          onPress={toggleTimer} 
+          backgroundColor={colors.primaryButtonBg} 
+          textColor={colors.primaryButtonText}
+        />
       </View>
 
       <TaskSelectionModal 

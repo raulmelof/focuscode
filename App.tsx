@@ -7,6 +7,7 @@ import { AppStack } from './src/presentation/routes/AppStack';
 import { initDB } from './src/data/database/database';
 import './src/services/firebase'; // Inicializa Firebase
 import { AuthProvider } from './src/contexts/AuthContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
 
 export default function App() {
   const [isDBReady, setIsDBReady] = useState(false);
@@ -34,10 +35,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
-          {/* Toda a lógica de Stack.Navigator e Stack.Screen está guardada aqui dentro */}
-          <AppStack />
-        </NavigationContainer>
+        <ThemeProvider>
+          <NavigationContainer>
+            {/* Toda a lógica de Stack.Navigator e Stack.Screen está guardada aqui dentro */}
+            <AppStack />
+          </NavigationContainer>
+        </ThemeProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );
