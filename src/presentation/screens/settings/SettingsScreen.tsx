@@ -5,7 +5,6 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { styles } from './styles';
 import { useSettings, getGlobalIsFlipEnabled, setGlobalIsFlipEnabled, flipListeners } from '../../../hooks/useSettings';
-import { useAuth } from '../../../contexts/AuthContext';
 import { RootStackParamList } from '../../../types/navigation';
 
 export const SettingsScreen = () => {
@@ -13,7 +12,6 @@ export const SettingsScreen = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'Settings'>>();
   const { isRunning } = route.params || {};
   const { settings, saveSettings, isLoading } = useSettings();
-  const { user } = useAuth();
 
   const [focusTime, setFocusTime] = useState('');
   const [shortBreak, setShortBreak] = useState('');
@@ -36,6 +34,7 @@ export const SettingsScreen = () => {
       setShortBreak(settings.shortBreakMinutes.toString());
       setLongBreak(settings.longBreakMinutes.toString());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
   const handleFocusTimeChange = (text: string) => {

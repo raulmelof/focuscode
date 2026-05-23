@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Alert, Platform } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { Alert } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { AppNavigationProp } from '../../../types/navigation';
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
@@ -13,12 +13,12 @@ import { Tag } from '../../../types/Tag';
 import { initDB } from '../../../data/database/database';
 import { SyncService } from '../../../services/SyncService';
 import { useSettings, getGlobalIsFlipEnabled, setGlobalIsFlipEnabled, flipListeners } from '../../../hooks/useSettings';
-import { useFocusEffect } from '@react-navigation/native';
+// import { useFocusEffect } from '@react-navigation/native'; // Removed duplicate import
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { user } = useAuth();
-  const { settings, loadSettings, saveSettings, isLoading } = useSettings();
+  const { settings } = useSettings();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
