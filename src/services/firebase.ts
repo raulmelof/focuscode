@@ -1,9 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getAuth, initializeAuth } from "firebase/auth";
-// eslint-disable-next-line import/no-duplicates
-// @ts-ignore
-import { getReactNativePersistence } from "firebase/auth";
+import { getAuth, initializeAuth, getReactNativePersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
@@ -38,3 +35,15 @@ try {
 
 export const auth = firebaseAuth;
 export default app;
+
+import type { Persistence } from "firebase/auth";
+
+// type augmentation to resolve TypeScript error for getReactNativePersistence
+declare module "firebase/auth" {
+  export interface ReactNativeAsyncStorage {
+    getItem(key: string): Promise<string | null>;
+    setItem(key: string, value: string): Promise<void>;
+    removeItem(key: string): Promise<void>;
+  }
+  export function getReactNativePersistence(storage: ReactNativeAsyncStorage): Persistence;
+}

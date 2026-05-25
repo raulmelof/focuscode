@@ -1,3 +1,4 @@
+import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useHomeViewModel } from '../useHomeViewModel';
 import { TaskModel } from '../../../../data/models/TaskModel';
@@ -12,7 +13,7 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
   }),
   useFocusEffect: (cb: () => void) => {
-    require('react').useEffect(() => {
+    React.useEffect(() => {
       cb();
     }, []);
   },
