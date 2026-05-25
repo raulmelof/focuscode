@@ -200,6 +200,10 @@ export const initDB = async () => {
           focusTimeMinutes INTEGER DEFAULT 25,
           FOREIGN KEY (tagId) REFERENCES tags (id)
         );
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        );
       `);
 
       const alterQueries = [
