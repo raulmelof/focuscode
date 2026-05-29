@@ -58,8 +58,8 @@ export const useProfileViewModel = () => {
     fetchProfileData();
   }, [fetchProfileData]);
 
-  // Total Focus Time in minutes (assuming 25 minutes per completed task)
-  const totalFocusTime = completedCount * 25;
+  // Total Focus Time in minutes calculated by summing up the actual focus times of completed tasks
+  const totalFocusTime = completedTasks.reduce((sum, task) => sum + (task.focusTimeMinutes ?? 25), 0);
 
   const achievements: Achievement[] = [
     {

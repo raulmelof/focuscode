@@ -5,4 +5,5 @@ export interface Task {
   isCompleted: boolean;
   tagId?: number;
   summaryImageUri?: string;
+  focusTimeMinutes?: number;
 }

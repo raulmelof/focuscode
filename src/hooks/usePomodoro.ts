@@ -11,6 +11,10 @@ export const usePomodoro = ({ initialTimeInSeconds, onFocusEnd }: UsePomodoroPro
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
+    setTimeLeft(initialTimeInSeconds);
+  }, [initialTimeInSeconds]);
+
+  useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     let timeout: ReturnType<typeof setTimeout>;
 

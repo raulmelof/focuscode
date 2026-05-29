@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -23,6 +23,7 @@ export const HomeScreen = () => {
   const { colors } = useAppTheme();
   const { 
     formattedTime, 
+    isRunning,
     buttonTitle, 
     toggleTimer, 
     progress,
@@ -54,9 +55,8 @@ export const HomeScreen = () => {
     isFocusSummaryModalVisible,
     lastCompletedTask,
     goToBreak,
-    isFlipEnabled,
-    setIsFlipEnabled
   } = useHomeViewModel(); 
+  
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
@@ -67,31 +67,48 @@ export const HomeScreen = () => {
         >
           <Feather name="user" size={28} color={colors.iconColor} />
         </TouchableOpacity>
+        
         <Text style={[styles.headerTitle, { color: colors.text }]}>FocusCode</Text>
-        {Platform.OS !== 'web' && (
-          <View style={styles.headerRight}>
-            <Switch
-              value={isFlipEnabled}
-              onValueChange={setIsFlipEnabled}
-              trackColor={{ false: '#767577', true: colors.accent }}
-              thumbColor={isFlipEnabled ? '#E6D5A7' : '#f4f3f4'}
-            />
-          </View>
-        )}
+        
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Settings', { isRunning, selectedTaskId: selectedTask?.id })} 
+            testID="home-settings-button"
+          >
+            <Feather name="settings" size={24} color={colors.iconColor} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.container}>
 
         <TouchableOpacity 
-          style={[styles.taskPill, { backgroundColor: colors.pillBg }]} 
+          style={[styles.taskPill, { backgroundColor: colors.pillBg }, isRunning && { opacity: 0.85 }]} 
           activeOpacity={0.7} 
-          onPress={selectedTask ? openTaskDetailsModal : openTaskModal}
+          onPress={() => {
+            if (isRunning) {
+              Alert.alert(
+                'Foco em Andamento',
+                'Você não pode alterar ou ver detalhes da tarefa enquanto o cronômetro estiver rodando.'
+              );
+              return;
+            }
+            if (selectedTask) {
+              openTaskDetailsModal();
+            } else {
+              openTaskModal();
+            }
+          }}
           disabled={isTaskModalVisible}
         >
           <Text style={[styles.taskPillText, { color: colors.text }]}>
             {selectedTask ? selectedTask.title : 'Nenhuma tarefa selecionada'}
           </Text>
-          {selectedTask && <Feather name="info" size={18} color={colors.iconColor} style={{ marginLeft: 8, opacity: 0.5 }} />}
+          {isRunning ? (
+            <Feather name="lock" size={18} color={colors.iconColor} style={{ marginLeft: 8, opacity: 0.6 }} />
+          ) : (
+            selectedTask && <Feather name="info" size={18} color={colors.iconColor} style={{ marginLeft: 8, opacity: 0.5 }} />
+          )}
         </TouchableOpacity>
 
         <PomodoroCircle progress={progress} />
@@ -149,6 +166,7 @@ export const HomeScreen = () => {
         onClose={closeTaskDetailsModal}
         onAttachSummary={openCameraModal}
         onChangeTask={openTaskModal}
+        isRunning={isRunning}
       />
 
       <FocusSummaryModal

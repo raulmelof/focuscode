@@ -8,6 +8,7 @@ import { LoginScreen } from '../screens/auth/LoginScreen';
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -40,6 +41,11 @@ export const AppStack = () => {
           <Stack.Screen
             name="Profile"
             component={ProfileScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
             options={{ headerShown: false }}
           />
         </>

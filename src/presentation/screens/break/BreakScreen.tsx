@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PomodoroCircle } from '../../components/PomodoroCircle';
 import { TimerDisplay } from '../../components/TimerDisplay';
@@ -8,25 +8,34 @@ import { useBreakViewModel } from './useBreakViewModel';
 import { useAppTheme } from '../../../contexts/ThemeContext';
 
 export const BreakScreen = () => {
-  const { formattedTime, progress, handleSkipBreak } = useBreakViewModel();
+  const { formattedTime, progress, handleSkipBreak, isLoading } = useBreakViewModel();
   const { theme } = useAppTheme();
 
-  // Mapeamento de imagens para os temas (atualmente ambas usam cenario_base.png como placeholder/fallback)
+  // Garante que o loading novo da T21 funcione
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E6D5A7' }}>
+        <ActivityIndicator size="large" color="#2A1128" />
+      </View>
+    );
+  }
+
+  // Mapeamento de imagens para os temas da main
   const themeBackgrounds = {
     cafe: require('../../../assets/cenario_base.png'),
-    robo: require('../../../assets/cenario_base.png'), // Será substituído na T23
+    robo: require('../../../assets/cenario_base.png'), 
   };
 
   const themeInfo = {
     cafe: {
       title: 'Hora do Café!',
       subtitle: 'Levante-se e tome uma xícara de café...',
-      overlayColor: 'rgba(139, 69, 19, 0.08)', // Tom quente café suave
+      overlayColor: 'rgba(139, 69, 19, 0.08)', 
     },
     robo: {
       title: 'Modo Robô!',
       subtitle: 'Recarregando baterias e atualizando circuitos...',
-      overlayColor: 'rgba(0, 191, 255, 0.15)', // Tom azulado tecnológico
+      overlayColor: 'rgba(0, 191, 255, 0.15)', 
     },
   };
 
@@ -41,7 +50,7 @@ export const BreakScreen = () => {
         testID="break-theme-background"
       />
 
-      {/* Overlay translúcido condicional para diferenciar visualmente os temas enquanto os assets finais não existem */}
+      {/* Overlay translúcido da main */}
       <View 
         style={[
           StyleSheet.absoluteFillObject, 
@@ -76,4 +85,4 @@ export const BreakScreen = () => {
       
     </View>
   );
-};
+};

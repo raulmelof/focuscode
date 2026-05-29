@@ -11,16 +11,18 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Tag } from '../../types/Tag';
+import { useSettings } from '../../hooks/useSettings';
 
 interface CreateTaskModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (title: string, tagId?: number) => void;
+  onSave: (title: string, tagId?: number, focusTimeMinutes?: number) => void;
   tags: Tag[];
   onManageTags: () => void;
 }
 
 export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }: CreateTaskModalProps) => {
+  const { settings } = useSettings();
   const [title, setTitle] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<number | undefined>(undefined);
   const [successMessage, setSuccessMessage] = useState('');
@@ -30,7 +32,7 @@ export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }
       return;
     }
     
-    onSave(title, selectedTagId);
+    onSave(title, selectedTagId, settings?.focusTimeMinutes ?? 25);
     setTitle('');
     setSelectedTagId(undefined);
     setSuccessMessage('Tarefa criada com sucesso!');
@@ -74,6 +76,8 @@ export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }
               onChangeText={setTitle}
               autoFocus={true}
             />
+
+
 
             <View style={styles.tagsHeader}>
               <Text style={styles.label}>Tag (Categoria)</Text>

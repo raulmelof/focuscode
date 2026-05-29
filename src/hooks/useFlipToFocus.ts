@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { Platform } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 
 export const useFlipToFocus = (
@@ -23,7 +24,12 @@ export const useFlipToFocus = (
   }, [isRunning, isActive]);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (Platform.OS === 'web') return;
+
+    if (!isActive) {
+      Accelerometer.removeAllListeners();
+      return;
+    }
 
     let subscription: ReturnType<typeof Accelerometer.addListener> | null = null;
 
@@ -50,9 +56,11 @@ export const useFlipToFocus = (
     });
 
     return () => {
+      if (Platform.OS === 'web') return;
       if (subscription) {
         subscription.remove();
       }
+      Accelerometer.removeAllListeners();
     };
   }, [isActive, isRunning, runningSince, onStart, onPause]);
 };

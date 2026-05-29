@@ -2,10 +2,12 @@ import { useEffect, useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
+import { useSettings } from '../../../hooks/useSettings';
 
 export const useBreakViewModel = () => {
   const navigation = useNavigation();
-  const BREAK_TIME = 30; 
+  const { settings, isLoading } = useSettings();
+  const BREAK_TIME = settings.shortBreakMinutes * 60; 
 
   const handleBreakEnd = useCallback(() => {
     navigation.goBack(); 
@@ -17,11 +19,13 @@ export const useBreakViewModel = () => {
   });
 
   useEffect(() => {
-    start();
+    if (!isLoading) {
+      start();
+    }
     
    
     return () => stop(); 
-  }, [start, stop]);
+  }, [start, stop, isLoading]);
 
  
   const handleSkipBreak = () => {
@@ -30,11 +34,12 @@ export const useBreakViewModel = () => {
   };
 
   const formattedTime = formatTime(timeLeft);
-  const progress = 1 - (timeLeft / BREAK_TIME);
+  const progress = Math.max(0, Math.min(1, 1 - (timeLeft / BREAK_TIME)));
 
   return {
     formattedTime,
     progress,
     handleSkipBreak,
+    isLoading,
   };
 };

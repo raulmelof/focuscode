@@ -11,9 +11,10 @@ interface TaskDetailsModalProps {
   onClose: () => void;
   onAttachSummary?: () => void;
   onChangeTask?: () => void;
+  isRunning?: boolean;
 }
 
-export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary, onChangeTask }: TaskDetailsModalProps) => {
+export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary, onChangeTask, isRunning }: TaskDetailsModalProps) => {
 
   if (!task) return null;
 
@@ -58,6 +59,15 @@ export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary,
               </Text>
             </View>
 
+            {task.isCompleted && (
+              <View style={styles.infoSection}>
+                <Text style={styles.label}>Tempo de Foco</Text>
+                <Text style={styles.status}>
+                  {task.focusTimeMinutes ?? 25} minutos
+                </Text>
+              </View>
+            )}
+
             <View style={styles.summarySection}>
               <Text style={styles.label}>Resumo / Evidência</Text>
               {task.summaryImageUri ? (
@@ -92,14 +102,18 @@ export const TaskDetailsModal = ({ visible, task, tag, onClose, onAttachSummary,
 
             {onChangeTask && (
               <TouchableOpacity 
-                style={styles.changeTaskButton} 
+                style={[styles.changeTaskButton, isRunning && { opacity: 0.5 }]} 
+                disabled={isRunning}
                 onPress={() => {
+                  if (isRunning) return;
                   onClose();
                   onChangeTask();
                 }}
               >
-                <Feather name="repeat" size={20} color="#2A1128" />
-                <Text style={styles.changeTaskText}>Selecionar outra tarefa</Text>
+                <Feather name={isRunning ? "lock" : "repeat"} size={20} color="#2A1128" />
+                <Text style={styles.changeTaskText}>
+                  {isRunning ? "Tarefa em andamento (Bloqueada)" : "Selecionar outra tarefa"}
+                </Text>
               </TouchableOpacity>
             )}
           </ScrollView>

@@ -40,9 +40,9 @@ describe('useFlipToFocus', () => {
 
   it('deve chamar onPause quando o celular for desvirado apos 5 segundos', () => {
     const mockDateNow = jest.spyOn(Date, 'now');
-    
+
     // Inicio: Celular virado (isRunning = true)
-    mockDateNow.mockReturnValue(1000); 
+    mockDateNow.mockReturnValue(1000);
     renderHook(() => useFlipToFocus(true, true, mockOnStart, mockOnPause));
 
     act(() => {
@@ -58,8 +58,8 @@ describe('useFlipToFocus', () => {
 
   it('nao deve chamar onPause se o tempo de carência (5s) nao tiver passado', () => {
     const mockDateNow = jest.spyOn(Date, 'now');
-    
-    mockDateNow.mockReturnValue(1000); 
+
+    mockDateNow.mockReturnValue(1000);
     renderHook(() => useFlipToFocus(true, true, mockOnStart, mockOnPause));
 
     act(() => {
@@ -74,7 +74,7 @@ describe('useFlipToFocus', () => {
 
   it('nao deve fazer nada se isActive for false', () => {
     renderHook(() => useFlipToFocus(false, false, mockOnStart, mockOnPause));
-    
+
     expect(Accelerometer.addListener).not.toHaveBeenCalled();
   });
 });

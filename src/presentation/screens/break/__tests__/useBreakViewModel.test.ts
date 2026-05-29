@@ -1,6 +1,25 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { useBreakViewModel } from '../useBreakViewModel';
 
+// Mock AuthContext
+const mockUser = { uid: 'test-user-uid-123' };
+jest.mock('../../../../contexts/AuthContext', () => ({
+  useAuth: jest.fn(() => ({ user: mockUser, isLoading: false })),
+}));
+
+// Mock useSettings
+jest.mock('../../../../hooks/useSettings', () => ({
+  useSettings: () => ({
+    settings: {
+      focusTimeMinutes: 25,
+      shortBreakMinutes: 0.5,
+      longBreakMinutes: 15,
+    },
+    isLoading: false,
+    loadSettings: jest.fn(),
+  }),
+}));
+
 // 1. Mockamos apenas a navegação, pois queremos testar a integração real com o usePomodoro
 const mockGoBack = jest.fn();
 jest.mock('@react-navigation/native', () => ({
