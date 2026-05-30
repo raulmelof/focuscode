@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, initializeAuth, getReactNativePersistence } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import type { Persistence } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
@@ -35,8 +36,6 @@ try {
 
 export const auth = firebaseAuth;
 export default app;
-
-import type { Persistence } from "firebase/auth";
 
 // type augmentation to resolve TypeScript error for getReactNativePersistence
 declare module "firebase/auth" {

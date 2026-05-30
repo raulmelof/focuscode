@@ -36,7 +36,13 @@ export const useProfileViewModel = () => {
   }, []);
 
   const fetchProfileData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setCompletedCount(0);
+      setCompletedTasks([]);
+      setTags([]);
+      setSelectedTask(null);
+      return;
+    }
     try {
       setIsLoading(true);
       const [count, tasks, dbTags] = await Promise.all([

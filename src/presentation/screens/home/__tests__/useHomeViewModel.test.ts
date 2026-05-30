@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useHomeViewModel } from '../useHomeViewModel';
 import { TaskModel } from '../../../../data/models/TaskModel';
@@ -13,7 +12,8 @@ jest.mock('@react-navigation/native', () => ({
     navigate: mockNavigate,
   }),
   useFocusEffect: (cb: () => void) => {
-    React.useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('react').useEffect(() => {
       cb();
     }, []);
   },
