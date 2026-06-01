@@ -36,7 +36,8 @@ export const useFlipToFocus = (
     Accelerometer.setUpdateInterval(500);
 
     subscription = Accelerometer.addListener(({ x, y, z }) => {
-      const isFaceDown = Math.abs(x) < 0.3 && Math.abs(y) < 0.3 && z > 0.8;
+      const isZFaceDown = Platform.OS === 'ios' ? z > 0.8 : z < -0.8;
+      const isFaceDown = Math.abs(x) < 0.3 && Math.abs(y) < 0.3 && isZFaceDown;
 
       if (!isRunning) {
         if (isFaceDown && lastActionRef.current !== 'start') {
