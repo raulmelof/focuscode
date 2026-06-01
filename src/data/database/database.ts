@@ -240,3 +240,9 @@ export const initDB = async () => {
 
   return initPromise;
 };
+
+export const clearDBCache = () => {
+  dbInstance = null;
+  webDB = null;
+  initPromise = null;
+};

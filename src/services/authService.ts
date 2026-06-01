@@ -5,6 +5,7 @@ import {
   User,
 } from 'firebase/auth';
 import { auth } from './firebase';
+import { clearDBCache } from '../data/database/database';
 
 export interface AuthResponse {
   success: boolean;
@@ -54,6 +55,7 @@ export const signIn = async (email: string, password: string): Promise<AuthRespo
 export const signOut = async (): Promise<AuthResponse> => {
   try {
     await firebaseSignOut(auth);
+    clearDBCache();
     return { success: true };
   } catch {
     return { success: false, error: 'Erro ao sair da conta.' };

@@ -16,13 +16,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Inscreve-se nas mudanças de estado de autenticação (login, logoff, persistência)
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsLoading(false);
-
-      // Dispara a sincronização quando o usuário faz login
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        SyncService.sync().catch(err => console.error('AuthContext: Erro no SyncService:', err));
+        setIsLoading(true);
+        try {
+          // Dispara a sincronização quando o usuário faz login e aguarda
+          await SyncService.sync();
+        } catch (err) {
+          console.error('AuthContext: Erro no SyncService:', err);
+        }
+        setUser(currentUser);
+        setIsLoading(false);
+      } else {
+        setUser(null);
+        setIsLoading(false);
       }
     });
 

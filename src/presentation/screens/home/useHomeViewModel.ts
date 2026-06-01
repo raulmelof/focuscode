@@ -59,6 +59,8 @@ export const useHomeViewModel = () => {
     if (!user) {
       setTasks([]);
       setTags([]);
+      setSelectedTask(null);
+      setLastCompletedTask(null);
       return;
     }
     try {
