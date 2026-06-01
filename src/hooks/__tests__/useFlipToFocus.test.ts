@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { useFlipToFocus } from '../useFlipToFocus';
 import { Accelerometer } from 'expo-sensors';
+import { Platform } from 'react-native';
 
 jest.mock('expo-sensors', () => ({
   Accelerometer: {
@@ -19,6 +20,7 @@ describe('useFlipToFocus', () => {
     jest.clearAllMocks();
     mockOnStart = jest.fn();
     mockOnPause = jest.fn();
+    Platform.OS = 'android';
 
     // Capturar o callback passado para o addListener para simular eventos de sensor
     (Accelerometer.addListener as jest.Mock).mockImplementation((cb) => {
@@ -27,7 +29,20 @@ describe('useFlipToFocus', () => {
     });
   });
 
-  it('deve chamar onStart quando o celular for virado para baixo', () => {
+  it('deve chamar onStart quando o celular for virado para baixo no Android', () => {
+    Platform.OS = 'android';
+    renderHook(() => useFlipToFocus(true, false, mockOnStart, mockOnPause));
+
+    act(() => {
+      // Simular celular virado para baixo (z < -0.8 e x,y proximos de 0)
+      accelerometerCallback({ x: 0.1, y: 0.1, z: -0.9 });
+    });
+
+    expect(mockOnStart).toHaveBeenCalled();
+  });
+
+  it('deve chamar onStart quando o celular for virado para baixo no iOS', () => {
+    Platform.OS = 'ios';
     renderHook(() => useFlipToFocus(true, false, mockOnStart, mockOnPause));
 
     act(() => {

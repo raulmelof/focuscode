@@ -93,11 +93,10 @@ export const TaskSelectionModal = ({
     >
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPressOut={onClose}>
         <Animated.View 
-          {...panResponder.panHandlers}
           style={[styles.content, { transform: [{ translateY: panY }] }]}
           onStartShouldSetResponder={() => true}
         >
-          <View style={styles.dragArea}>
+          <View {...panResponder.panHandlers} style={styles.dragArea}>
             <View style={styles.dragHandle} />
             <View style={styles.header}>
               <Text style={styles.headerTitle}>Selecionar Tarefa</Text>
