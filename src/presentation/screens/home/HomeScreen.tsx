@@ -17,6 +17,8 @@ import { TaskDetailsModal } from '../../components/TaskDetailsModal';
 import { CameraModal } from '../../components/CameraModal';
 import { FocusSummaryModal } from '../../components/FocusSummaryModal';
 import { useAppTheme } from '../../../contexts/ThemeContext';
+import { usePomodoroCycle } from '../../../hooks/usePomodoroCycle';
+import { useSettings } from '../../../hooks/useSettings';
 
 export const HomeScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
@@ -57,6 +59,12 @@ export const HomeScreen = () => {
     goToBreak,
   } = useHomeViewModel(); 
   
+  const { cycleCount } = usePomodoroCycle();
+  const { settings } = useSettings();
+  
+  const currentCycle = (cycleCount % settings.cyclesBeforeLongBreak) + 1;
+  const totalCycles = settings.cyclesBeforeLongBreak;
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
@@ -115,6 +123,9 @@ export const HomeScreen = () => {
 
         <View style={styles.timerContainer}>
           <TimerDisplay time={formattedTime} />
+          <Text style={{ textAlign: 'center', marginTop: 10, color: colors.text, opacity: 0.7 }}>
+            Ciclo Pomodoro: {currentCycle} / {totalCycles}
+          </Text>
         </View>
 
         <PrimaryButton 

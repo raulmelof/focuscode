@@ -16,6 +16,7 @@ export const SettingsScreen = () => {
   const [focusTime, setFocusTime] = useState('');
   const [shortBreak, setShortBreak] = useState('');
   const [longBreak, setLongBreak] = useState('');
+  const [cyclesBeforeLongBreak, setCyclesBeforeLongBreak] = useState('');
   const [isFlipEnabled, setIsFlipEnabledState] = useState(getGlobalIsFlipEnabled());
 
   useEffect(() => {
@@ -30,9 +31,10 @@ export const SettingsScreen = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      setFocusTime(settings.focusTimeMinutes.toString());
-      setShortBreak(settings.shortBreakMinutes.toString());
-      setLongBreak(settings.longBreakMinutes.toString());
+      setFocusTime(settings.focusTimeMinutes?.toString() || '25');
+      setShortBreak(settings.shortBreakMinutes?.toString() || '5');
+      setLongBreak(settings.longBreakMinutes?.toString() || '15');
+      setCyclesBeforeLongBreak((settings.cyclesBeforeLongBreak || 4).toString());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
@@ -103,6 +105,29 @@ export const SettingsScreen = () => {
       }).catch(err => console.error('Error saving long break settings:', err));
     } else {
       setLongBreak(settings.longBreakMinutes.toString());
+    }
+  };
+
+  const handleCyclesChange = (text: string) => {
+    setCyclesBeforeLongBreak(text);
+    const parsed = parseInt(text, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 10) {
+      saveSettings({
+        ...settings,
+        cyclesBeforeLongBreak: parsed,
+      }).catch(err => console.error('Error saving cycles settings:', err));
+    }
+  };
+
+  const handleCyclesSave = () => {
+    const parsed = parseInt(cyclesBeforeLongBreak, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 10) {
+      saveSettings({
+        ...settings,
+        cyclesBeforeLongBreak: parsed,
+      }).catch(err => console.error('Error saving cycles settings:', err));
+    } else {
+      setCyclesBeforeLongBreak((settings.cyclesBeforeLongBreak || 4).toString());
     }
   };
 
@@ -196,6 +221,21 @@ export const SettingsScreen = () => {
                   maxLength={3}
                 />
                 <Text style={styles.unitText}>min</Text>
+              </View>
+            </View>
+
+            <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>Ciclos de Foco</Text>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  value={cyclesBeforeLongBreak}
+                  onChangeText={handleCyclesChange}
+                  onBlur={handleCyclesSave}
+                  keyboardType="numeric"
+                  maxLength={2}
+                />
+                <Text style={styles.unitText}>ciclos</Text>
               </View>
             </View>
           </View>

@@ -13,12 +13,13 @@ import { Tag } from '../../../types/Tag';
 import { initDB } from '../../../data/database/database';
 import { SyncService } from '../../../services/SyncService';
 import { useSettings, getGlobalIsFlipEnabled, setGlobalIsFlipEnabled, flipListeners } from '../../../hooks/useSettings';
-// import { useFocusEffect } from '@react-navigation/native'; // Removed duplicate import
+import { usePomodoroCycle, getGlobalAutoStartFocus, setGlobalAutoStartFocus } from '../../../hooks/usePomodoroCycle';
 
 export const useHomeViewModel = () => {
   const navigation = useNavigation<AppNavigationProp>();
   const { user } = useAuth();
   const { settings } = useSettings();
+  const { incrementCycle, cycleCount, resetCycle } = usePomodoroCycle();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -101,16 +102,25 @@ export const useHomeViewModel = () => {
         // Salva o tempo de foco usado da configuração atual na tarefa
         await TaskModel.updateTaskFocusTime(user.uid, selectedTask.id, settings.focusTimeMinutes);
 
-        const completedTask = { ...selectedTask, isCompleted: true, focusTimeMinutes: settings.focusTimeMinutes };
-        setLastCompletedTask(completedTask);
-        await TaskModel.updateTaskStatus(user.uid, selectedTask.id, true);
+        incrementCycle();
+        const nextCycleCount = cycleCount + 1;
+        const isNowLongBreak = nextCycleCount > 0 && nextCycleCount % settings.cyclesBeforeLongBreak === 0;
 
-        // Remove da lista de ativos
-        setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
-        setSelectedTask(null);
+        if (isNowLongBreak) {
+          const completedTask = { ...selectedTask, isCompleted: true, focusTimeMinutes: settings.focusTimeMinutes };
+          setLastCompletedTask(completedTask);
+          await TaskModel.updateTaskStatus(user.uid, selectedTask.id, true);
 
-        // Em vez de navegar direto, mostra o modal de resumo
-        setIsFocusSummaryModalVisible(true);
+          // Remove da lista de ativos
+          setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
+          setSelectedTask(null);
+
+          // Em vez de navegar direto, mostra o modal de resumo
+          setIsFocusSummaryModalVisible(true);
+        } else {
+          // É uma pausa curta, então não conclui a tarefa e vai direto pra pausa
+          navigation.navigate('BreakScreen');
+        }
 
         // Dispara sincronização em background
         SyncService.sync().catch(err => console.error('[ViewModel] Error syncing completed task:', err));
@@ -121,7 +131,7 @@ export const useHomeViewModel = () => {
     } else {
       navigation.navigate('BreakScreen');
     }
-  }, [navigation, selectedTask, user, settings]);
+  }, [navigation, selectedTask, user, settings, incrementCycle, cycleCount]);
 
   const goToBreak = useCallback(() => {
     setIsFocusSummaryModalVisible(false);
@@ -160,8 +170,9 @@ export const useHomeViewModel = () => {
   const selectTask = useCallback((task: Task) => {
     setSelectedTask(task);
     resetTimer();
+    resetCycle();
     closeTaskModal();
-  }, [closeTaskModal, resetTimer]);
+  }, [closeTaskModal, resetTimer, resetCycle]);
 
   const openCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(true), []);
   const closeCreateTaskModal = useCallback(() => setIsCreateTaskModalVisible(false), []);
@@ -277,6 +288,15 @@ export const useHomeViewModel = () => {
       Alert.alert('Erro', 'Não foi possível excluir a tarefa.');
     }
   }, [user, fetchTasks, selectedTask]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (getGlobalAutoStartFocus() && selectedTaskRef.current) {
+        setGlobalAutoStartFocus(false);
+        start();
+      }
+    }, [start])
+  );
 
   return {
     formattedTime: formatTime(timeLeft),
