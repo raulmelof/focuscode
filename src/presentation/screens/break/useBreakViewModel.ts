@@ -3,15 +3,22 @@ import { useNavigation } from '@react-navigation/native';
 import { usePomodoro } from '../../../hooks/usePomodoro';
 import { formatTime } from '../../../utils/formatTime';
 import { useSettings } from '../../../hooks/useSettings';
+import { usePomodoroCycle, setGlobalAutoStartFocus } from '../../../hooks/usePomodoroCycle';
 
 export const useBreakViewModel = () => {
   const navigation = useNavigation();
-  const { settings, isLoading } = useSettings();
-  const BREAK_TIME = settings.shortBreakMinutes * 60; 
+  const { settings, isLoading: isSettingsLoading } = useSettings();
+  const { isLongBreak, isLoading: isCycleLoading } = usePomodoroCycle();
+
+  const isLoading = isSettingsLoading || isCycleLoading;
+  const BREAK_TIME = isLongBreak ? settings.longBreakMinutes * 60 : settings.shortBreakMinutes * 60; 
 
   const handleBreakEnd = useCallback(() => {
+    if (!isLongBreak) {
+      setGlobalAutoStartFocus(true);
+    }
     navigation.goBack(); 
-  }, [navigation]);
+  }, [navigation, isLongBreak]);
 
   const { timeLeft, start, stop } = usePomodoro({
     initialTimeInSeconds: BREAK_TIME,

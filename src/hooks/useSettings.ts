@@ -7,6 +7,7 @@ export interface PomodoroSettings {
   focusTimeMinutes: number;
   shortBreakMinutes: number;
   longBreakMinutes: number;
+  cyclesBeforeLongBreak: number;
   isFlipEnabled?: boolean;
 }
 
@@ -14,6 +15,7 @@ const DEFAULT_SETTINGS: PomodoroSettings = {
   focusTimeMinutes: 25,
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
+  cyclesBeforeLongBreak: 4,
   isFlipEnabled: true,
 };
 
@@ -117,7 +119,7 @@ export const useSettings = () => {
       const stored = await getStorageItem(key);
       if (stored) {
         const parsed = JSON.parse(stored);
-        setGlobalSettings(parsed);
+        setGlobalSettings({ ...DEFAULT_SETTINGS, ...parsed });
         if (parsed && typeof parsed.isFlipEnabled === 'boolean') {
           globalIsFlipEnabled = parsed.isFlipEnabled;
           flipListeners.forEach(l => l(parsed.isFlipEnabled));
