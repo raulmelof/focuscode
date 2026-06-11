@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
     right: 0,
     width: '100%',
     height: '100%',
-    resizeMode: 'cover', 
+    resizeMode: 'stretch', 
   },
   uiLayer: {
     flex: 1,
