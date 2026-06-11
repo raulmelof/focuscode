@@ -145,7 +145,6 @@ const createWebDBAdapter = (): DatabaseConnection => {
 
 let webDB: DatabaseConnection | null = null;
 
-let dbInstance: DatabaseConnection | null = null;
 
 export const getDBConnection = async (): Promise<DatabaseConnection> => {
   if (Platform.OS === 'web') {
@@ -160,11 +159,10 @@ export const getDBConnection = async (): Promise<DatabaseConnection> => {
     return webDB;
   }
   
-  if (!dbInstance) {
-    const db = await SQLite.openDatabaseAsync('focuscode.db');
-    dbInstance = db as unknown as DatabaseConnection;
-  }
-  return dbInstance;
+  // No mobile, sempre chama openDatabaseAsync (o Expo gerencia o cache internamente). 
+  // Isso evita o erro de NullPointerException ao dar Fast Refresh.
+  const db = await SQLite.openDatabaseAsync('focuscode.db');
+  return db as unknown as DatabaseConnection;
 };
 
 let initPromise: Promise<void> | null = null;
@@ -242,7 +240,6 @@ export const initDB = async () => {
 };
 
 export const clearDBCache = () => {
-  dbInstance = null;
   webDB = null;
   initPromise = null;
 };

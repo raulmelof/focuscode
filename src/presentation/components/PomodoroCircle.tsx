@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Image, useWindowDimensions, Animated, Easing } from 'react-native';
+import { useAppTheme } from '../../contexts/ThemeContext';
 
 interface PomodoroCircleProps {
   progress?: number;
@@ -9,6 +10,7 @@ interface PomodoroCircleProps {
 export const PomodoroCircle = ({ progress = 0, showImage = true }: PomodoroCircleProps) => {
   const { width } = useWindowDimensions();
   const circleSize = width * 0.7; 
+  const { theme, colors } = useAppTheme();
 
   const spinValue = useRef(new Animated.Value(0)).current;
 
@@ -28,19 +30,22 @@ export const PomodoroCircle = ({ progress = 0, showImage = true }: PomodoroCircl
 
   return (
     <View style={[styles.container, { width: circleSize, height: circleSize }]}>
-      <View style={[styles.circle, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}>
+      <View style={[styles.circle, { width: circleSize, height: circleSize, borderRadius: circleSize / 2, borderColor: colors.accent }]}>
         
         {showImage && (
           <Image
-            source={require('../../assets/cafe_vazio.png')}
-            style={styles.image}
+            source={theme === 'robo' ? require('../../assets/themes/robo/Cubo robo.png') : require('../../assets/themes/cafe/cafe_vazio.png')}
+            style={[
+              styles.image, 
+              theme === 'robo' && { width: '100%', height: '100%', transform: [{ scale: 1.5 }] }
+            ]}
           />
         )}
 
       </View>
 
       <Animated.View style={[styles.spinnerContainer, { width: circleSize, height: circleSize, transform: [{ rotate: spin }] }]}>
-        <View style={styles.spinnerBall} />
+        <View style={[styles.spinnerBall, { backgroundColor: colors.accent }]} />
       </Animated.View>
     </View>
   );

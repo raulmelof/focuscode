@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -22,7 +22,7 @@ import { useSettings } from '../../../hooks/useSettings';
 
 export const HomeScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const { colors } = useAppTheme();
+  const { colors, theme } = useAppTheme();
   const { 
     formattedTime, 
     isRunning,
@@ -65,8 +65,26 @@ export const HomeScreen = () => {
   const currentCycle = (cycleCount % settings.cyclesBeforeLongBreak) + 1;
   const totalCycles = settings.cyclesBeforeLongBreak;
 
+  const themeBackgrounds = {
+    cafe: require('../../../assets/themes/cafe/Dentrocabana hd.png'),
+    robo: require('../../../assets/themes/robo/Fundo robo full hdo.png'),
+  };
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <View style={{ flex: 1 }}>
+      <Image 
+        source={themeBackgrounds[theme]} 
+        style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]} 
+        resizeMode="stretch"
+      />
+      {/* Overlay translúcido opcional para melhorar leitura sobre o fundo */}
+      <View 
+        style={[
+          StyleSheet.absoluteFillObject, 
+          { backgroundColor: theme === 'robo' ? 'rgba(14, 22, 36, 0.4)' : 'rgba(230, 213, 167, 0.4)' }
+        ]} 
+      />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: 'transparent' }]}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton} 
@@ -193,6 +211,7 @@ export const HomeScreen = () => {
         onCapture={handleCaptureSummary}
       />
 
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };

@@ -22,8 +22,8 @@ export const BreakScreen = () => {
 
   // Mapeamento de imagens para os temas da main
   const themeBackgrounds = {
-    cafe: require('../../../assets/cenario_base.png'),
-    robo: require('../../../assets/cenario_base.png'), 
+    cafe: require('../../../assets/themes/cafe/cenario_base.png'),
+    robo: require('../../../assets/themes/robo/Fundo robo full hdo.png'), 
   };
 
   const themeInfo = {
