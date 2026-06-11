@@ -76,4 +76,26 @@ export const styles = StyleSheet.create({
     marginTop: 'auto',
     marginBottom: 24,
   },
+  themeToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(42, 17, 40, 0.08)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  themeButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  activeThemeButton: {
+    backgroundColor: '#2A1128',
+  },
+  themeButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2A1128',
+  },
+  activeThemeButtonText: {
+    color: '#E6D5A7',
+  },
 });

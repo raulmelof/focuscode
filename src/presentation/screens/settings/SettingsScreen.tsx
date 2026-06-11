@@ -6,12 +6,14 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { styles } from './styles';
 import { useSettings, getGlobalIsFlipEnabled, setGlobalIsFlipEnabled, flipListeners } from '../../../hooks/useSettings';
 import { RootStackParamList } from '../../../types/navigation';
+import { useAppTheme } from '../../../contexts/ThemeContext';
 
 export const SettingsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, 'Settings'>>();
   const { isRunning } = route.params || {};
   const { settings, saveSettings, isLoading } = useSettings();
+  const { theme, setTheme, colors } = useAppTheme();
 
   const [focusTime, setFocusTime] = useState('');
   const [shortBreak, setShortBreak] = useState('');
@@ -141,45 +143,68 @@ export const SettingsScreen = () => {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E6D5A7' }}>
-        <ActivityIndicator size="large" color="#2A1128" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
           <TouchableOpacity
-            style={styles.headerButton}
+            style={[styles.headerButton, { backgroundColor: colors.pillBg }]}
             onPress={() => navigation.goBack()}
           >
-            <Feather name="arrow-left" size={24} color="#2A1128" />
+            <Feather name="arrow-left" size={24} color={colors.iconColor} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>CONFIGURAÇÕES</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>CONFIGURAÇÕES</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.container}>
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Configurações de Tempo</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Aparência</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={[styles.settingLabel, { color: colors.text, marginBottom: 0 }]}>Tema Visual</Text>
+              <View style={[styles.themeToggleContainer, { backgroundColor: theme === 'robo' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(42, 17, 40, 0.08)' }]}>
+                <TouchableOpacity 
+                  style={[styles.themeButton, theme === 'cafe' && styles.activeThemeButton]} 
+                  onPress={() => setTheme('cafe')}
+                  testID="theme-button-cafe"
+                >
+                  <Text style={[styles.themeButtonText, theme === 'cafe' ? styles.activeThemeButtonText : { color: colors.text }]}>Café ☕</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.themeButton, theme === 'robo' && styles.activeThemeButton]} 
+                  onPress={() => setTheme('robo')}
+                  testID="theme-button-robo"
+                >
+                  <Text style={[styles.themeButtonText, theme === 'robo' ? styles.activeThemeButtonText : { color: colors.text }]}>Robô 🤖</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Configurações de Tempo</Text>
 
             <View style={styles.settingRow}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <Text style={[styles.settingLabel, isRunning && { opacity: 0.6 }, { marginBottom: 0 }]}>Tempo de Foco</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }, isRunning && { opacity: 0.6 }, { marginBottom: 0 }]}>Tempo de Foco</Text>
                 {isRunning && (
                   <Text style={{ fontSize: 10, color: '#C84B31', fontWeight: '600' }}>
                     Timer em andamento (Bloqueado)
                   </Text>
                 )}
               </View>
-              <View style={[styles.inputContainer, isRunning && { backgroundColor: 'rgba(42, 17, 40, 0.05)', opacity: 0.6 }]}>
+              <View style={[styles.inputContainer, { backgroundColor: colors.pillBg }, isRunning && { opacity: 0.6 }]}>
                 <TextInput
-                  style={[styles.input, isRunning && { color: 'rgba(42, 17, 40, 0.5)' }]}
+                  style={[styles.input, { color: colors.text }]}
                   value={focusTime}
                   onChangeText={handleFocusTimeChange}
                   onBlur={handleFocusTimeSave}
@@ -187,7 +212,7 @@ export const SettingsScreen = () => {
                   maxLength={3}
                   editable={!isRunning}
                 />
-                <Text style={styles.unitText}>min</Text>
+                <Text style={[styles.unitText, { color: colors.text }]}>min</Text>
                 {isRunning && (
                   <Feather name="lock" size={14} color="#C84B31" style={{ marginRight: 16 }} />
                 )}
@@ -195,57 +220,57 @@ export const SettingsScreen = () => {
             </View>
 
             <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Pausa Curta</Text>
-              <View style={styles.inputContainer}>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Pausa Curta</Text>
+              <View style={[styles.inputContainer, { backgroundColor: colors.pillBg }]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   value={shortBreak}
                   onChangeText={handleShortBreakChange}
                   onBlur={handleShortBreakSave}
                   keyboardType="numeric"
                   maxLength={3}
                 />
-                <Text style={styles.unitText}>min</Text>
+                <Text style={[styles.unitText, { color: colors.text }]}>min</Text>
               </View>
             </View>
 
             <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Pausa Longa</Text>
-              <View style={styles.inputContainer}>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Pausa Longa</Text>
+              <View style={[styles.inputContainer, { backgroundColor: colors.pillBg }]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   value={longBreak}
                   onChangeText={handleLongBreakChange}
                   onBlur={handleLongBreakSave}
                   keyboardType="numeric"
                   maxLength={3}
                 />
-                <Text style={styles.unitText}>min</Text>
+                <Text style={[styles.unitText, { color: colors.text }]}>min</Text>
               </View>
             </View>
 
             <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Ciclos de Foco</Text>
-              <View style={styles.inputContainer}>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Ciclos de Foco</Text>
+              <View style={[styles.inputContainer, { backgroundColor: colors.pillBg }]}>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   value={cyclesBeforeLongBreak}
                   onChangeText={handleCyclesChange}
                   onBlur={handleCyclesSave}
                   keyboardType="numeric"
                   maxLength={2}
                 />
-                <Text style={styles.unitText}>ciclos</Text>
+                <Text style={[styles.unitText, { color: colors.text }]}>ciclos</Text>
               </View>
             </View>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Sensores do Dispositivo</Text>
+          <View style={[styles.card, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Sensores do Dispositivo</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flex: 1, marginRight: 16 }}>
-                <Text style={styles.settingLabel}>Virar para Focar</Text>
-                <Text style={{ fontSize: 12, color: 'rgba(42, 17, 40, 0.6)', marginTop: 4 }}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Virar para Focar</Text>
+                <Text style={{ fontSize: 12, color: colors.text, opacity: 0.6, marginTop: 4 }}>
                   Inicia o timer automaticamente ao colocar o celular com a tela virada para baixo.
                 </Text>
               </View>
@@ -256,11 +281,11 @@ export const SettingsScreen = () => {
                   width: 52,
                   height: 28,
                   borderRadius: 14,
-                  backgroundColor: isFlipEnabled ? '#2A1128' : 'rgba(42, 17, 40, 0.1)',
+                  backgroundColor: isFlipEnabled ? colors.accent : colors.pillBg,
                   padding: 2,
                   justifyContent: 'center',
                   borderWidth: 1.5,
-                  borderColor: '#2A1128',
+                  borderColor: isFlipEnabled ? colors.accent : colors.cardBorder,
                 }}
               >
                 <View
@@ -268,10 +293,10 @@ export const SettingsScreen = () => {
                     width: 22,
                     height: 22,
                     borderRadius: 11,
-                    backgroundColor: '#E6D5A7',
+                    backgroundColor: isFlipEnabled ? colors.background : colors.text,
                     alignSelf: isFlipEnabled ? 'flex-end' : 'flex-start',
                     borderWidth: 1.5,
-                    borderColor: '#2A1128',
+                    borderColor: 'transparent',
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 1 },
                     shadowOpacity: 0.1,

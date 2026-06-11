@@ -213,43 +213,5 @@ export const styles = StyleSheet.create({
     borderRadius: 20,
     marginLeft: 8,
   },
-  settingsCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(42, 17, 40, 0.1)',
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  settingLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#2A1128',
-  },
-  themeToggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(42, 17, 40, 0.08)',
-    borderRadius: 12,
-    padding: 4,
-  },
-  themeButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  activeThemeButton: {
-    backgroundColor: '#2A1128',
-  },
-  themeButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#2A1128',
-  },
-  activeThemeButtonText: {
-    color: '#E6D5A7',
-  },
+
 });
