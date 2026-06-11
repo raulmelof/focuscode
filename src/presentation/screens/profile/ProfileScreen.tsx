@@ -12,7 +12,7 @@ import { useAppTheme } from '../../../contexts/ThemeContext';
 
 export const ProfileScreen = () => {
   const navigation = useNavigation<AppNavigationProp>();
-  const { theme, setTheme, colors } = useAppTheme();
+  const { theme, colors } = useAppTheme();
   
   const {
     user,
@@ -93,29 +93,6 @@ export const ProfileScreen = () => {
             </View>
           </View>
 
-          {/* Settings Section */}
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Configurações</Text>
-          <View style={[styles.settingsCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-            <View style={styles.settingRow}>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Tema</Text>
-              <View style={[styles.themeToggleContainer, { backgroundColor: theme === 'robo' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(42, 17, 40, 0.08)' }]}>
-                <TouchableOpacity 
-                  style={[styles.themeButton, theme === 'cafe' && styles.activeThemeButton]} 
-                  onPress={() => setTheme('cafe')}
-                  testID="theme-button-cafe"
-                >
-                  <Text style={[styles.themeButtonText, theme === 'cafe' ? styles.activeThemeButtonText : { color: colors.text }]}>Café ☕</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.themeButton, theme === 'robo' && styles.activeThemeButton]} 
-                  onPress={() => setTheme('robo')}
-                  testID="theme-button-robo"
-                >
-                  <Text style={[styles.themeButtonText, theme === 'robo' ? styles.activeThemeButtonText : { color: colors.text }]}>Robô 🤖</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
 
           {/* Achievements Section */}
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Suas Conquistas</Text>
