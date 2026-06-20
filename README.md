@@ -36,6 +36,13 @@ Focada na implementação da arquitetura offline-first com persistência híbrid
 * 📄 **[Backlog da Sprint 2 (Documento de Entrega)](https://docs.google.com/document/d/19JuZM3FEENWLWsRAIjsDs6IwOjrnT4SXvKVCRkx6QaQ/edit?usp=sharing)**
 * 🗣️ **[Relato Oficial da Sprint 2](https://docs.google.com/document/d/1mZmc8h7vTwEGpGsSf2dZGMcAr1Hclsay508xHFn17SE/edit?usp=sharing)**
 
+### 🏃 Sprint 3 (Gamificação, UX, Storage e Ciclos do Pomodoro)
+Focada em elevar a Experiência do Usuário (UX), introduzir a camada de gamificação (estatísticas, sistema de conquistas e alternância de temas dinâmicos em Pixel Art) e liquidar débitos técnicos. Ocorreu a finalização da integração da câmera e compressão de mídia (Base64), aprimoramento do motor lógico com alternância de ciclos Pomodoro (pausas curtas/longas) e estabilização de bugs multiplataforma.
+* 📋 **[Quadro Kanban da Sprint 3](https://github.com/users/raulmelof/projects/4/views/9)**
+* 📊 **[Planilha de Organização e Tarefas (Sprint 3)](https://1drv.ms/x/c/1a3c3d094b0c101c/IQC73RQyGb8oQKGEuLwJnCnBAVbRzt2-RebSINbioxQnFco?e=0dlegl)**
+* 📄 **[Backlog da Sprint 3 (Documento de Entrega)](https://docs.google.com/document/d/1939GAy0Wu0yixws7bLT6DkpU9sUJwQjNiYpoIMcjEts/edit?usp=sharing)**
+* 🗣️ **[Relato Oficial da Sprint 3](https://docs.google.com/document/d/1mrbbxfitEAcPGMLLT3MTozErVpkeaNpLFuugnb_SZLk/edit?usp=sharing)**
+
 ---
 
 ## 🛠️ Tecnologias Utilizadas
