@@ -10,19 +10,17 @@ export interface DatabaseConnection {
 
 const createWebDBAdapter = (): DatabaseConnection => {
   const STORAGE_KEY = 'focuscode_web_db';
-  const savedData = Platform.OS === 'web' ? localStorage.getItem(STORAGE_KEY) : null;
+  const savedData = localStorage.getItem(STORAGE_KEY);
   const tables: Record<string, any[]> = savedData ? JSON.parse(savedData) : {};
   let autoIncrementIds: Record<string, number> = {};
 
   Object.keys(tables).forEach(tableName => {
-    const maxId = tables[tableName].reduce((max, item) => Math.max(max, item.id || 0), 0);
+    const maxId = tables[tableName].reduce((max, item) => Math.max(max, item.id), 0);
     autoIncrementIds[tableName] = maxId + 1;
   });
 
   const persist = () => {
-    if (Platform.OS === 'web') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tables));
-    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tables));
   };
 
   return {

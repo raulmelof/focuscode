@@ -94,15 +94,11 @@ export class SyncService {
         } else {
           // Se tiver imagem e for uma URI local, faz o upload para o Firebase Storage primeiro
           let finalImageUrl = task.summaryImageUri;
-          if (task.summaryImageUri && (
-            task.summaryImageUri.startsWith('file://') ||
-            task.summaryImageUri.startsWith('content://') ||
-            task.summaryImageUri.startsWith('ph://') ||
-            task.summaryImageUri.startsWith('blob:')
-          )) {
+          const uri = task.summaryImageUri || '';
+          if (/^(file|content|ph|blob):/i.test(uri)) {
             try {
               console.log(`[SyncService] Fazendo upload de imagem local para tarefa ${task.id}...`);
-              const uploadedUrl = await StorageService.uploadTaskImage(task.summaryImageUri, task.id);
+              const uploadedUrl = await StorageService.uploadTaskImage(uri, task.id);
               console.log(`[SyncService] Upload concluído! URL: ${uploadedUrl.substring(0, 80)}...`);
               
               // Atualiza localmente no SQLite

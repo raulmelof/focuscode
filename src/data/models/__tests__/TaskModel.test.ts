@@ -83,6 +83,24 @@ describe('TaskModel', () => {
     mockDateNow.mockRestore();
   });
 
+  it('should update task summary image with userId guard', async () => {
+    const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+    await TaskModel.updateTaskSummary(TEST_USER_ID, 1, 'image-uri');
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE tasks SET summaryImageUri = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+      ['image-uri', 1234567890, 1, TEST_USER_ID]
+    );
+
+    await TaskModel.updateTaskSummary(TEST_USER_ID, 2, undefined as any);
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE tasks SET summaryImageUri = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+      [null, 1234567890, 2, TEST_USER_ID]
+    );
+
+    mockDateNow.mockRestore();
+  });
+
   it('should update task focus time with userId guard', async () => {
     const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
 
@@ -117,6 +135,12 @@ describe('TaskModel', () => {
     expect(count).toBe(4);
   });
 
+  it('should return 0 when completed tasks count result is empty', async () => {
+    mockGetAllAsync.mockResolvedValueOnce([]);
+    const count = await TaskModel.getCompletedTasksCount(TEST_USER_ID);
+    expect(count).toBe(0);
+  });
+
   it('should get completed tasks for userId', async () => {
     mockGetAllAsync.mockResolvedValueOnce([
       { id: 10, title: 'Completed Task', description: 'Done description', isCompleted: 1, tagId: null, summaryImageUri: 'img-uri' }
@@ -131,5 +155,47 @@ describe('TaskModel', () => {
     expect(tasks[0].isCompleted).toBe(true);
     expect(tasks[0].description).toBe('Done description');
     expect(tasks[0].summaryImageUri).toBe('img-uri');
+  });
+
+  it('should use null fallbacks when userId or other fields are missing', async () => {
+    const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+    // Test updates with null/undefined userId
+    await TaskModel.updateTaskSummary(null as any, 1, null as any);
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE tasks SET summaryImageUri = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+      [null, 1234567890, 1, null]
+    );
+
+    await TaskModel.updateTaskStatus(undefined as any, 1, true);
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE tasks SET isCompleted = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+      [1, 1234567890, 1, null]
+    );
+
+    await TaskModel.deleteTask(null as any, 1);
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE tasks SET isDeleted = 1, updatedAt = ? WHERE id = ? AND userId = ?',
+      [1234567890, 1, null]
+    );
+
+    await TaskModel.updateTaskFocusTime(null as any, 1, 30);
+    expect(mockRunAsync).toHaveBeenCalledWith(
+      'UPDATE tasks SET focusTimeMinutes = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+      [30, 1234567890, 1, null]
+    );
+
+    mockDateNow.mockRestore();
+  });
+
+  it('should map optional fields correctly in getCompletedTasks', async () => {
+    mockGetAllAsync.mockResolvedValueOnce([
+      { id: 10, title: 'Completed Task', description: null, isCompleted: 1, tagId: null, summaryImageUri: null, focusTimeMinutes: null }
+    ]);
+    const tasks = await TaskModel.getCompletedTasks(TEST_USER_ID);
+    expect(tasks[0].description).toBeUndefined();
+    expect(tasks[0].tagId).toBeUndefined();
+    expect(tasks[0].summaryImageUri).toBeUndefined();
+    expect(tasks[0].focusTimeMinutes).toBe(25);
   });
 });

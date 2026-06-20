@@ -55,6 +55,27 @@ describe('SettingsService', () => {
         ['currentTheme', 'robo']
       );
     });
+
+    it('deve retornar o valor padrão em caso de erro ao obter do SQLite', async () => {
+      mockGetFirstAsync.mockRejectedValueOnce(new Error('DB Error'));
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const theme = await SettingsService.getSetting('currentTheme', 'cafe');
+
+      expect(theme).toBe('cafe');
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('deve lidar com erro ao salvar no SQLite', async () => {
+      mockRunAsync.mockRejectedValueOnce(new Error('DB Error'));
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await SettingsService.setSetting('currentTheme', 'robo');
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
   });
 
   describe('Web', () => {
@@ -121,6 +142,31 @@ describe('SettingsService', () => {
 
       expect((globalThis as any).localStorage.setItem).toHaveBeenCalledWith('setting_currentTheme', 'robo');
       expect(store['setting_currentTheme']).toBe('robo');
+    });
+
+    it('deve retornar o valor padrão em caso de erro ao obter do localStorage', async () => {
+      (globalThis as any).localStorage.getItem.mockImplementationOnce(() => {
+        throw new Error('Storage Error');
+      });
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const theme = await SettingsService.getSetting('currentTheme', 'cafe');
+
+      expect(theme).toBe('cafe');
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('deve lidar com erro ao salvar no localStorage', async () => {
+      (globalThis as any).localStorage.setItem.mockImplementationOnce(() => {
+        throw new Error('Storage Error');
+      });
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await SettingsService.setSetting('currentTheme', 'robo');
+
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
   });
 });

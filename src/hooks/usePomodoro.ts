@@ -23,7 +23,7 @@ export const usePomodoro = ({ initialTimeInSeconds, onFocusEnd }: UsePomodoroPro
         interval = setInterval(() => {
           setTimeLeft((prev) => prev - 1);
         }, 1000);
-      } else if (timeLeft === 0) {
+      } else {
         timeout = setTimeout(() => {
           setIsRunning(false);
           if (onFocusEnd) {

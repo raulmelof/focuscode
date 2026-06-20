@@ -91,4 +91,81 @@ describe('ThemeContext', () => {
     expect(result.current.theme).toBe('robo');
     expect(SettingsService.setSetting).toHaveBeenCalledWith('currentTheme_guest', 'robo');
   });
+
+  it('deve alternar o tema de robo para cafe', async () => {
+    (useAuth as jest.Mock).mockReturnValue({ user: { uid: 'user_robo' } });
+    (SettingsService.getSetting as jest.Mock).mockResolvedValue('robo');
+
+    const { result } = renderHook(() => useAppTheme(), { wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await result.current.toggleTheme();
+    });
+
+    expect(result.current.theme).toBe('cafe');
+    expect(SettingsService.setSetting).toHaveBeenCalledWith('currentTheme_user_robo', 'cafe');
+  });
+
+  it('deve logar erro ao falhar em carregar o tema', async () => {
+    (useAuth as jest.Mock).mockReturnValue({ user: null });
+    (SettingsService.getSetting as jest.Mock).mockRejectedValueOnce(new Error('Load error'));
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useAppTheme(), { wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith('[ThemeProvider] Erro ao carregar tema:', expect.any(Error));
+    consoleSpy.mockRestore();
+  });
+
+  it('deve logar erro ao falhar em salvar o tema', async () => {
+    (useAuth as jest.Mock).mockReturnValue({ user: null });
+    (SettingsService.getSetting as jest.Mock).mockResolvedValueOnce('cafe');
+    (SettingsService.setSetting as jest.Mock).mockRejectedValueOnce(new Error('Save error'));
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useAppTheme(), { wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await result.current.setTheme('robo');
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith('[ThemeProvider] Erro ao salvar tema:', expect.any(Error));
+    consoleSpy.mockRestore();
+  });
+
+  it('deve lançar erro se useAppTheme for usado fora do ThemeProvider', () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    expect(() => {
+      renderHook(() => useAppTheme());
+    }).toThrow('useAppTheme deve ser usado dentro de um ThemeProvider');
+    
+    consoleSpy.mockRestore();
+  });
+
+  it('deve usar cores do cafe como fallback se o tema não for reconhecido', async () => {
+    (useAuth as jest.Mock).mockReturnValue({ user: null });
+    (SettingsService.getSetting as jest.Mock).mockResolvedValueOnce('invalid_theme');
+
+    const { result } = renderHook(() => useAppTheme(), { wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.theme).toBe('invalid_theme'); // internal state
+    expect(result.current.colors.background).toBe('#E6D5A7'); // fallback to cafe
+  });
 });

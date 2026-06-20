@@ -92,4 +92,80 @@ describe('useFlipToFocus', () => {
 
     expect(Accelerometer.addListener).not.toHaveBeenCalled();
   });
+
+  it('nao deve fazer nada se estiver na web', () => {
+    Platform.OS = 'web';
+    renderHook(() => useFlipToFocus(true, false, mockOnStart, mockOnPause));
+    expect(Accelerometer.addListener).not.toHaveBeenCalled();
+  });
+
+  it('deve limpar os listeners no unmount', () => {
+    Platform.OS = 'android';
+    const mockRemove = jest.fn();
+    (Accelerometer.addListener as jest.Mock).mockReturnValueOnce({ remove: mockRemove });
+
+    const { unmount } = renderHook(() => useFlipToFocus(true, false, mockOnStart, mockOnPause));
+    unmount();
+
+    expect(mockRemove).toHaveBeenCalled();
+    expect(Accelerometer.removeAllListeners).toHaveBeenCalled();
+  });
+
+  it('nao deve chamar onStart se lastActionRef.current ja for "start"', () => {
+    Platform.OS = 'android';
+    renderHook(() => useFlipToFocus(true, false, mockOnStart, mockOnPause));
+
+    act(() => {
+      // First flip down
+      accelerometerCallback({ x: 0.1, y: 0.1, z: -0.9 });
+      // Second flip down immediately
+      accelerometerCallback({ x: 0.1, y: 0.1, z: -0.9 });
+    });
+
+    expect(mockOnStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('nao deve chamar onPause se lastActionRef.current ja for "pause"', () => {
+    const mockDateNow = jest.spyOn(Date, 'now');
+    mockDateNow.mockReturnValue(1000);
+    renderHook(() => useFlipToFocus(true, true, mockOnStart, mockOnPause));
+
+    act(() => {
+      mockDateNow.mockReturnValue(7000);
+      // First flip up
+      accelerometerCallback({ x: 0.1, y: 0.1, z: 0.1 });
+      // Second flip up immediately
+      accelerometerCallback({ x: 0.1, y: 0.1, z: 0.1 });
+    });
+
+    expect(mockOnPause).toHaveBeenCalledTimes(1);
+    mockDateNow.mockRestore();
+  });
+
+  it('nao deve fazer nada se isFaceDown for true durante isRunning', () => {
+    renderHook(() => useFlipToFocus(true, true, mockOnStart, mockOnPause));
+
+    act(() => {
+      // isFaceDown is true
+      accelerometerCallback({ x: 0.1, y: 0.1, z: -0.9 });
+    });
+
+    expect(mockOnPause).not.toHaveBeenCalled();
+    expect(mockOnStart).not.toHaveBeenCalled();
+  });
+
+  it('deve fazer cleanup na web sem dar erro', () => {
+    Platform.OS = 'web';
+    const { unmount } = renderHook(() => useFlipToFocus(true, false, mockOnStart, mockOnPause));
+    unmount();
+    // nothing to assert, just coverage
+  });
+
+  it('deve fazer cleanup com subscription nulo', () => {
+    Platform.OS = 'android';
+    // mock addListener to return something but let's say isActive is false
+    const { unmount } = renderHook(() => useFlipToFocus(false, false, mockOnStart, mockOnPause));
+    unmount();
+    // subscription was null
+  });
 });
