@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import * as databaseModule from '../database';
 
 const mockOpenDatabaseAsync = jest.fn();
 jest.mock('expo-sqlite', () => ({
@@ -7,7 +8,7 @@ jest.mock('expo-sqlite', () => ({
 
 describe('Database', () => {
   let mockDb: any;
-  let databaseModule: any;
+  // Removed dynamic databaseModule
   let mockStorage: Record<string, string> = {};
 
   beforeAll(() => {
@@ -22,7 +23,6 @@ describe('Database', () => {
   });
 
   beforeEach(() => {
-    jest.resetModules();
     jest.clearAllMocks();
     mockStorage = {};
 
@@ -34,7 +34,7 @@ describe('Database', () => {
     };
 
     mockOpenDatabaseAsync.mockResolvedValue(mockDb);
-    databaseModule = require('../database');
+    // import handled at the top
     databaseModule.clearDBCache();
   });
 

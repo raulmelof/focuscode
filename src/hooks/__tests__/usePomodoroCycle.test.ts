@@ -181,7 +181,7 @@ describe('usePomodoroCycle', () => {
       (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(new Error('Storage Error'));
       // Force getStorageItem to throw by making localStorage also throw
       if (typeof window !== 'undefined') {
-        const originalWindow = (globalThis as any).window;
+        // unused var removed
         delete (globalThis as any).window;
         (globalThis as any).window = {
           localStorage: {
@@ -192,7 +192,7 @@ describe('usePomodoroCycle', () => {
       }
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      const { result } = renderHook(() => usePomodoroCycle());
+      renderHook(() => usePomodoroCycle());
 
       await act(async () => {
         await Promise.resolve();
@@ -208,7 +208,7 @@ describe('usePomodoroCycle', () => {
       (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error('Storage Save Error'));
       // Force setStorageItem to throw
       if (typeof window !== 'undefined') {
-        const originalWindow = (globalThis as any).window;
+        // unused var removed
         delete (globalThis as any).window;
         (globalThis as any).window = {
           localStorage: {

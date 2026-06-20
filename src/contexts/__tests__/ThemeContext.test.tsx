@@ -115,7 +115,7 @@ describe('ThemeContext', () => {
     (SettingsService.getSetting as jest.Mock).mockRejectedValueOnce(new Error('Load error'));
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { result } = renderHook(() => useAppTheme(), { wrapper });
+    renderHook(() => useAppTheme(), { wrapper });
 
     await act(async () => {
       await Promise.resolve();

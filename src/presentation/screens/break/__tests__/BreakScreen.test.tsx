@@ -105,7 +105,7 @@ describe('BreakScreen', () => {
     
     (useAppTheme as jest.Mock).mockReturnValue({ theme: 'cafe' });
 
-    const { getByText, queryByText } = render(<BreakScreen />);
+    const { queryByText } = render(<BreakScreen />);
     // Se o loading spinner é um ActivityIndicator sem texto e não tem testID, 
     // podemos apenas testar se a tela não renderiza o texto principal:
     expect(queryByText('Hora do Café!')).toBeNull();

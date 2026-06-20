@@ -6,7 +6,8 @@ import { Task } from '../../../../types/Task';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { SyncService } from '../../../../services/SyncService';
 import { useFlipToFocus } from '../../../../hooks/useFlipToFocus';
-import { setGlobalIsFlipEnabled } from '../../../../hooks/useSettings';
+import { setGlobalIsFlipEnabled, flipListeners } from '../../../../hooks/useSettings';
+import { Alert } from 'react-native';
 
 // Mock Navigation
 const mockNavigate = jest.fn();
@@ -302,7 +303,7 @@ describe('useHomeViewModel', () => {
 
     act(() => {
       // simulate firing the listener
-      require('../../../../hooks/useSettings').flipListeners.forEach((listener: any) => listener(false));
+      flipListeners.forEach((listener: any) => listener(false));
     });
 
     expect(result.current.isFlipEnabled).toBe(false);
@@ -358,7 +359,7 @@ describe('useHomeViewModel', () => {
 
   it('should handle toggleTimer when no task is selected', async () => {
     const { result } = renderHook(() => useHomeViewModel());
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
+    const alertSpy = jest.spyOn(Alert, 'alert');
 
     act(() => {
       result.current.toggleTimer();
@@ -375,7 +376,7 @@ describe('useHomeViewModel', () => {
       pauseCb();
     });
 
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
+    const alertSpy = jest.spyOn(Alert, 'alert');
     renderHook(() => useHomeViewModel());
 
     expect(alertSpy).toHaveBeenCalledWith(
@@ -431,7 +432,7 @@ describe('useHomeViewModel', () => {
   });
 
   it('should handle handleFocusEnd when no task selected', async () => {
-    const { result } = renderHook(() => useHomeViewModel());
+    renderHook(() => useHomeViewModel());
 
     await act(async () => {
       if (triggerFocusEnd) triggerFocusEnd();
@@ -500,7 +501,7 @@ describe('useHomeViewModel', () => {
     (TagModel.deleteTag as jest.Mock).mockRejectedValueOnce(new Error('Tag error'));
     (TaskModel.deleteTask as jest.Mock).mockRejectedValueOnce(new Error('Task error'));
 
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
+    const alertSpy = jest.spyOn(Alert, 'alert');
     const { result } = renderHook(() => useHomeViewModel());
 
     await act(async () => {
@@ -530,7 +531,7 @@ describe('useHomeViewModel', () => {
 
   it('should handle errors in addTask', async () => {
     (TaskModel.insertTask as jest.Mock).mockRejectedValueOnce(new Error('Insert error'));
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
+    const alertSpy = jest.spyOn(Alert, 'alert');
     const { result } = renderHook(() => useHomeViewModel());
 
     await act(async () => {
@@ -546,7 +547,7 @@ describe('useHomeViewModel', () => {
 
   it('should handle missing user in addTask', async () => {
     (useAuth as jest.Mock).mockReturnValue({ user: null });
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
+    const alertSpy = jest.spyOn(Alert, 'alert');
     const { result } = renderHook(() => useHomeViewModel());
 
     await act(async () => {
@@ -575,7 +576,7 @@ describe('useHomeViewModel', () => {
   });
 
   it('should handle capture summary error', async () => {
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
+    const alertSpy = jest.spyOn(Alert, 'alert');
     const { result } = renderHook(() => useHomeViewModel());
     await waitFor(() => expect(result.current.tasks).toHaveLength(2));
 
