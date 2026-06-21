@@ -81,11 +81,6 @@ export const usePomodoroCycle = () => {
     }
 
     const key = getStorageKey();
-    if (!key) {
-      setGlobalCycleCount(0);
-      setIsLoading(false);
-      return;
-    }
 
     if (!force && hasLoadedCycleForKey === key) {
       setIsLoading(false);
@@ -114,7 +109,6 @@ export const usePomodoroCycle = () => {
 
   const saveCycleCount = async (newCount: number) => {
     const key = getStorageKey();
-    if (!key) return;
     
     try {
       setGlobalCycleCount(newCount);
@@ -138,5 +132,6 @@ export const usePomodoroCycle = () => {
     resetCycle,
     isLoading,
     isLongBreak: cycleCount > 0 && cycleCount % settings.cyclesBeforeLongBreak === 0,
+    loadCycleCount,
   };
 };

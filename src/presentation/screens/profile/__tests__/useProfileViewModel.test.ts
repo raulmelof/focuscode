@@ -39,7 +39,7 @@ describe('useProfileViewModel', () => {
       { id: 2, title: 'Concluida 2', isCompleted: true, focusTimeMinutes: 25 },
       { id: 3, title: 'Concluida 3', isCompleted: true, focusTimeMinutes: 25 },
       { id: 4, title: 'Concluida 4', isCompleted: true, focusTimeMinutes: 25 },
-      { id: 5, title: 'Concluida 5', isCompleted: true, focusTimeMinutes: 25 }
+      { id: 5, title: 'Concluida 5', isCompleted: true } // undefined focusTimeMinutes, defaults to 25
     ]);
 
     const { result } = renderHook(() => useProfileViewModel());
@@ -119,5 +119,29 @@ describe('useProfileViewModel', () => {
     });
     expect(result.current.isDetailsModalVisible).toBe(false);
     expect(result.current.selectedTask).toBeNull();
+  });
+
+  it('should clear state and return early when user is null', async () => {
+    (useAuth as jest.Mock).mockReturnValue({ user: null, isLoading: false });
+    const { result } = renderHook(() => useProfileViewModel());
+    
+    await waitFor(() => expect(result.current.isLoading).toBe(true));
+    // It will early return and NOT fetch tasks.
+    // Wait for internal state updates to settle (though it doesn't set isLoading to false if user is null? Wait, isLoading defaults to true, and doesn't get set to false if user is null in the hook)
+    // Let's check:
+    expect(result.current.completedCount).toBe(0);
+    expect(result.current.completedTasks).toEqual([]);
+    expect(result.current.tags).toEqual([]);
+    expect(result.current.selectedTask).toBeNull();
+  });
+
+  it('should catch error in fetchProfileData', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    (TaskModel.getCompletedTasksCount as jest.Mock).mockRejectedValueOnce(new Error('Profile fetch error'));
+    const { result } = renderHook(() => useProfileViewModel());
+    
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.completedCount).toBe(0); // Kept default
+    consoleSpy.mockRestore();
   });
 });

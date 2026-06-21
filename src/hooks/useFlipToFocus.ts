@@ -57,10 +57,7 @@ export const useFlipToFocus = (
     });
 
     return () => {
-      if (Platform.OS === 'web') return;
-      if (subscription) {
-        subscription.remove();
-      }
+      subscription.remove();
       Accelerometer.removeAllListeners();
     };
   }, [isActive, isRunning, runningSince, onStart, onPause]);

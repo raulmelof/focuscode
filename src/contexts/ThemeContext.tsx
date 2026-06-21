@@ -55,7 +55,7 @@ interface ThemeContextData {
   isLoadingTheme: boolean;
 }
 
-const ThemeContext = createContext<ThemeContextData>({} as ThemeContextData);
+const ThemeContext = createContext<ThemeContextData | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();

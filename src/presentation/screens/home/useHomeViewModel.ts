@@ -54,8 +54,7 @@ export const useHomeViewModel = () => {
     setGlobalIsFlipEnabled(value);
   }, []);
 
-  // Load tasks and tags from local DB filtered by logged user
-  // When user is null (logout), clear UI cache automatically
+  // Load tasks and tags from local DB filtered by logged user. Clears cache on logout.
   const fetchTasks = useCallback(async () => {
     if (!user) {
       setTasks([]);
@@ -99,7 +98,7 @@ export const useHomeViewModel = () => {
   const handleFocusEnd = useCallback(async () => {
     if (selectedTask && user) {
       try {
-        // Salva o tempo de foco usado da configuração atual na tarefa
+        // Save focus time to the task
         await TaskModel.updateTaskFocusTime(user.uid, selectedTask.id, settings.focusTimeMinutes);
 
         incrementCycle();
@@ -111,18 +110,16 @@ export const useHomeViewModel = () => {
           setLastCompletedTask(completedTask);
           await TaskModel.updateTaskStatus(user.uid, selectedTask.id, true);
 
-          // Remove da lista de ativos
+          // Remove from active list and show summary modal
           setTasks(prev => prev.filter(t => t.id !== selectedTask.id));
           setSelectedTask(null);
-
-          // Em vez de navegar direto, mostra o modal de resumo
           setIsFocusSummaryModalVisible(true);
         } else {
-          // É uma pausa curta, então não conclui a tarefa e vai direto pra pausa
+          // Navigate to short break
           navigation.navigate('BreakScreen');
         }
 
-        // Dispara sincronização em background
+  
         SyncService.sync().catch(err => console.error('[ViewModel] Error syncing completed task:', err));
       } catch (error) {
         console.error('[ViewModel] Error completing task:', error);
@@ -206,7 +203,6 @@ export const useHomeViewModel = () => {
         setTasks(prev => prev.map(t => t.id === taskToUpdate.id ? updatedTask : t));
       }
 
-      // Dispara sincronização em background (para fazer upload da imagem em Base64 compactada)
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing task summary:', err));
     } catch (error) {
       console.error('[ViewModel] Error updating task summary:', error);
@@ -225,7 +221,7 @@ export const useHomeViewModel = () => {
       await fetchTasks();
       closeCreateTaskModal();
 
-      // Dispara sincronização em background
+
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing new task:', err));
     } catch (error) {
       console.error('useHomeViewModel: Error creating task:', error);
@@ -239,7 +235,7 @@ export const useHomeViewModel = () => {
       await TagModel.insertTag(user.uid, name, color);
       await fetchTasks();
 
-      // Dispara sincronização em background
+
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing new tag:', err));
     } catch (error) {
       console.error('[ViewModel] Error adding tag:', error);
@@ -252,7 +248,7 @@ export const useHomeViewModel = () => {
       await TagModel.updateTag(user.uid, id, name, color);
       await fetchTasks();
 
-      // Dispara sincronização em background
+
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing updated tag:', err));
     } catch (error) {
       console.error('[ViewModel] Error updating tag:', error);
@@ -265,7 +261,7 @@ export const useHomeViewModel = () => {
       await TagModel.deleteTag(user.uid, id);
       await fetchTasks();
 
-      // Dispara sincronização em background
+
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing deleted tag:', err));
     } catch (error) {
       console.error('[ViewModel] Error deleting tag:', error);
@@ -281,7 +277,7 @@ export const useHomeViewModel = () => {
         setSelectedTask(null);
       }
 
-      // Dispara sincronização em background
+
       SyncService.sync().catch(err => console.error('[ViewModel] Error syncing deleted task:', err));
     } catch (error) {
       console.error('[ViewModel] Error deleting task:', error);

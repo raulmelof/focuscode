@@ -94,4 +94,31 @@ describe('BreakScreen', () => {
 
     expect(mockHandleSkipBreak).toHaveBeenCalledTimes(1);
   });
+
+  it('deve renderizar o loading se isLoading for true', () => {
+    (useBreakViewModel as jest.Mock).mockReturnValue({
+      formattedTime: '05:00',
+      progress: 1,
+      handleSkipBreak: mockHandleSkipBreak,
+      isLoading: true
+    });
+    
+    (useAppTheme as jest.Mock).mockReturnValue({ theme: 'cafe' });
+
+    const { queryByText } = render(<BreakScreen />);
+    // Se o loading spinner é um ActivityIndicator sem texto e não tem testID, 
+    // podemos apenas testar se a tela não renderiza o texto principal:
+    expect(queryByText('Hora do Café!')).toBeNull();
+  });
+
+  it('deve cair no fallback de tema se for um tema desconhecido', () => {
+    (useAppTheme as jest.Mock).mockReturnValue({ 
+      theme: 'unknown_theme', 
+      colors: { accent: '#2A1128' } 
+    });
+    const { getByText } = render(<BreakScreen />);
+    
+    // Deve renderizar o fallback que é 'Hora do Café!'
+    expect(getByText('Hora do Café!')).toBeTruthy();
+  });
 });
