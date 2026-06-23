@@ -9,6 +9,7 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   Profile: undefined;
   Settings: { isRunning?: boolean; selectedTaskId?: number } | undefined;
+  Statistics: undefined;
 };
 
 export type AppNavigationProp = NativeStackNavigationProp<RootStackParamList>;

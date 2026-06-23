@@ -42,6 +42,9 @@ export const ProfileScreen = () => {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>PERFIL</Text>
         <View style={styles.headerRightContainer}>
+          <TouchableOpacity style={[styles.headerButton, { marginRight: 8 }]} onPress={() => navigation.navigate('Statistics')} testID="profile-statistics-button">
+            <Feather name="bar-chart-2" size={20} color={colors.iconColor} />
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.headerButton, { marginRight: 8 }]} onPress={refresh} testID="profile-refresh-button">
             <Feather name="refresh-cw" size={20} color={colors.iconColor} />
           </TouchableOpacity>

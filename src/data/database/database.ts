@@ -142,7 +142,7 @@ const createWebDBAdapter = (): DatabaseConnection => {
 };
 
 let webDB: DatabaseConnection | null = null;
-
+let mobileDBPromise: Promise<DatabaseConnection> | null = null;
 
 export const getDBConnection = async (): Promise<DatabaseConnection> => {
   if (Platform.OS === 'web') {
@@ -157,10 +157,14 @@ export const getDBConnection = async (): Promise<DatabaseConnection> => {
     return webDB;
   }
   
-  // No mobile, sempre chama openDatabaseAsync (o Expo gerencia o cache internamente). 
-  // Isso evita o erro de NullPointerException ao dar Fast Refresh.
-  const db = await SQLite.openDatabaseAsync('focuscode.db');
-  return db as unknown as DatabaseConnection;
+  // Usar um cache de Promise evita que chamadas simultâneas (ex: no boot do app)
+  // abram várias conexões e causem NullPointerException ou race conditions.
+  if (!mobileDBPromise) {
+    mobileDBPromise = SQLite.openDatabaseAsync('focuscode.db').then(
+      db => db as unknown as DatabaseConnection
+    );
+  }
+  return mobileDBPromise;
 };
 
 let initPromise: Promise<void> | null = null;
@@ -239,5 +243,11 @@ export const initDB = async () => {
 
 export const clearDBCache = () => {
   webDB = null;
+  // NÃO zeramos o mobileDBPromise aqui! O Expo gerencia a vida útil da conexão
+  // durante todo o ciclo do app. Limpar a promise e tentar reabrir o banco
+  // causava o NullPointerException ao trocar de contas.
+  if (process.env.NODE_ENV === 'test') {
+    mobileDBPromise = null;
+  }
   initPromise = null;
 };

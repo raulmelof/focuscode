@@ -9,6 +9,7 @@ import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
+import { StatisticsScreen } from '../screens/statistics/StatisticsScreen';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -46,6 +47,11 @@ export const AppStack = () => {
           <Stack.Screen
             name="Settings"
             component={SettingsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Statistics"
+            component={StatisticsScreen}
             options={{ headerShown: false }}
           />
         </>

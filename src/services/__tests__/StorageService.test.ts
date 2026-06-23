@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { StorageService } from '../StorageService';
 
 jest.mock('expo-image-manipulator', () => ({

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { SyncService } from '../SyncService';
 import { getDBConnection, initDB } from '../../data/database/database';
 import { setDoc, getDocs, doc } from 'firebase/firestore';
