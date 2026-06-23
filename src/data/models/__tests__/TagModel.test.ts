@@ -4,7 +4,7 @@ const mockRunAsync = jest.fn();
 const mockGetAllAsync = jest.fn();
 
 jest.mock('expo-sqlite', () => ({
-  openDatabaseAsync: jest.fn(() => ({
+  openDatabaseAsync: jest.fn(() => Promise.resolve({
     runAsync: mockRunAsync,
     getAllAsync: mockGetAllAsync,
   })),

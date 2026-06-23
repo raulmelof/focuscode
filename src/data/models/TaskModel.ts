@@ -1,5 +1,6 @@
 import { getDBConnection } from '../database/database';
 import { Task } from '../../types/Task';
+import { Platform } from 'react-native';
 
 export class TaskModel {
   static async insertTask(userId: string, title: string, description?: string, tagId?: number, focusTimeMinutes: number = 25): Promise<number> {
@@ -97,5 +98,77 @@ export class TaskModel {
       summaryImageUri: row.summaryImageUri ?? undefined,
       focusTimeMinutes: row.focusTimeMinutes ?? 25
     }));
+  }
+
+  static async getCompletedTasksByTag(userId: string): Promise<{ tagId: number | null, count: number }[]> {
+    const db = await getDBConnection();
+    
+    if (Platform.OS === 'web') {
+      const allRows = await db.getAllAsync<any>("SELECT * FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ?", [userId]);
+      const grouped: Record<string, number> = {};
+      allRows.forEach(row => {
+        const key = row.tagId ? String(row.tagId) : 'null';
+        grouped[key] = (grouped[key] || 0) + 1;
+      });
+      return Object.entries(grouped).map(([key, count]) => ({
+        tagId: key === 'null' ? null : Number(key),
+        count
+      }));
+    }
+
+    const result = await db.getAllAsync<{ tagId: number | null, count: number }>(
+      'SELECT tagId, COUNT(*) as count FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ? GROUP BY tagId',
+      [userId]
+    );
+    return result;
+  }
+
+  static async getFocusTimeByDate(userId: string): Promise<{ date: string, totalMinutes: number }[]> {
+    const db = await getDBConnection();
+
+    if (Platform.OS === 'web') {
+      const allRows = await db.getAllAsync<any>("SELECT * FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ?", [userId]);
+      const grouped: Record<string, number> = {};
+      allRows.forEach(row => {
+        if (row.updatedAt) {
+          const dateObj = new Date(row.updatedAt);
+          const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+          grouped[dateStr] = (grouped[dateStr] || 0) + (row.focusTimeMinutes || 0);
+        }
+      });
+      return Object.entries(grouped)
+        .map(([date, totalMinutes]) => ({ date, totalMinutes }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-7);
+    }
+
+    const result = await db.getAllAsync<{ date: string, totalMinutes: number }>(
+      "SELECT strftime('%Y-%m-%d', updatedAt / 1000, 'unixepoch') as date, SUM(focusTimeMinutes) as totalMinutes FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ? AND updatedAt IS NOT NULL GROUP BY date ORDER BY date ASC LIMIT 7",
+      [userId]
+    );
+    return result;
+  }
+
+  static async getCompletedDates(userId: string): Promise<string[]> {
+    const db = await getDBConnection();
+
+    if (Platform.OS === 'web') {
+      const allRows = await db.getAllAsync<any>("SELECT * FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ?", [userId]);
+      const dates = new Set<string>();
+      allRows.forEach(row => {
+        if (row.updatedAt) {
+          const dateObj = new Date(row.updatedAt);
+          const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+          dates.add(dateStr);
+        }
+      });
+      return Array.from(dates);
+    }
+
+    const result = await db.getAllAsync<{ date: string }>(
+      "SELECT DISTINCT strftime('%Y-%m-%d', updatedAt / 1000, 'unixepoch', 'localtime') as date FROM tasks WHERE isCompleted = 1 AND isDeleted = 0 AND userId = ? AND updatedAt IS NOT NULL",
+      [userId]
+    );
+    return result.map(r => r.date);
   }
 }
