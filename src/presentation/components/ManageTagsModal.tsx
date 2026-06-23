@@ -35,7 +35,7 @@ interface ManageTagsModalProps {
   onDeleteTag: (id: number) => Promise<void>;
 }
 
-export const ManageTagsModal = ({ 
+export const ManageTagsModal = React.memo(({ 
   visible, 
   onClose, 
   onBack,
@@ -229,7 +229,7 @@ export const ManageTagsModal = ({
       </KeyboardAvoidingView>
     </Modal>
   );
-};
+});
 
 const styles = StyleSheet.create({
   overlay: {
@@ -392,3 +392,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   }
 });
+
+ManageTagsModal.displayName = 'ManageTagsModal';

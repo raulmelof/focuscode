@@ -43,13 +43,6 @@ export const SettingsScreen = () => {
 
   const handleFocusTimeChange = (text: string) => {
     setFocusTime(text);
-    const parsed = parseInt(text, 10);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
-      saveSettings({
-        ...settings,
-        focusTimeMinutes: parsed,
-      }).catch(err => console.error('Error saving focus time settings:', err));
-    }
   };
 
   const handleFocusTimeSave = () => {
@@ -60,19 +53,12 @@ export const SettingsScreen = () => {
         focusTimeMinutes: parsed,
       }).catch(err => console.error('Error saving focus time settings:', err));
     } else {
-      setFocusTime(settings.focusTimeMinutes.toString());
+      setFocusTime((settings.focusTimeMinutes ?? 25).toString());
     }
   };
 
   const handleShortBreakChange = (text: string) => {
     setShortBreak(text);
-    const parsed = parseInt(text, 10);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
-      saveSettings({
-        ...settings,
-        shortBreakMinutes: parsed,
-      }).catch(err => console.error('Error saving short break settings:', err));
-    }
   };
 
   const handleShortBreakSave = () => {
@@ -83,19 +69,12 @@ export const SettingsScreen = () => {
         shortBreakMinutes: parsed,
       }).catch(err => console.error('Error saving short break settings:', err));
     } else {
-      setShortBreak(settings.shortBreakMinutes.toString());
+      setShortBreak((settings.shortBreakMinutes ?? 5).toString());
     }
   };
 
   const handleLongBreakChange = (text: string) => {
     setLongBreak(text);
-    const parsed = parseInt(text, 10);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
-      saveSettings({
-        ...settings,
-        longBreakMinutes: parsed,
-      }).catch(err => console.error('Error saving long break settings:', err));
-    }
   };
 
   const handleLongBreakSave = () => {
@@ -106,19 +85,12 @@ export const SettingsScreen = () => {
         longBreakMinutes: parsed,
       }).catch(err => console.error('Error saving long break settings:', err));
     } else {
-      setLongBreak(settings.longBreakMinutes.toString());
+      setLongBreak((settings.longBreakMinutes ?? 15).toString());
     }
   };
 
   const handleCyclesChange = (text: string) => {
     setCyclesBeforeLongBreak(text);
-    const parsed = parseInt(text, 10);
-    if (!isNaN(parsed) && parsed > 0 && parsed <= 10) {
-      saveSettings({
-        ...settings,
-        cyclesBeforeLongBreak: parsed,
-      }).catch(err => console.error('Error saving cycles settings:', err));
-    }
   };
 
   const handleCyclesSave = () => {
@@ -129,7 +101,7 @@ export const SettingsScreen = () => {
         cyclesBeforeLongBreak: parsed,
       }).catch(err => console.error('Error saving cycles settings:', err));
     } else {
-      setCyclesBeforeLongBreak((settings.cyclesBeforeLongBreak || 4).toString());
+      setCyclesBeforeLongBreak((settings.cyclesBeforeLongBreak ?? 4).toString());
     }
   };
 

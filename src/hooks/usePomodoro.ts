@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { AppState } from 'react-native';
 
 
 interface UsePomodoroProps {
@@ -9,10 +10,27 @@ interface UsePomodoroProps {
 export const usePomodoro = ({ initialTimeInSeconds, onFocusEnd }: UsePomodoroProps) => {
   const [timeLeft, setTimeLeft] = useState(initialTimeInSeconds);
   const [isRunning, setIsRunning] = useState(false);
+  const backgroundTimeRef = useRef<number>(0);
 
   useEffect(() => {
     setTimeLeft(initialTimeInSeconds);
   }, [initialTimeInSeconds]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active' && isRunning && backgroundTimeRef.current > 0) {
+        const elapsed = Math.floor((Date.now() - backgroundTimeRef.current) / 1000);
+        setTimeLeft(prev => Math.max(0, prev - elapsed));
+        backgroundTimeRef.current = 0;
+      } else if (nextAppState.match(/inactive|background/) && isRunning) {
+        backgroundTimeRef.current = Date.now();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isRunning]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
