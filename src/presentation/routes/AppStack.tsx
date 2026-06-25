@@ -11,11 +11,13 @@ import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { StatisticsScreen } from '../screens/statistics/StatisticsScreen';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAppTheme } from '../../contexts/ThemeContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const AppStack = () => {
   const { user, isLoading } = useAuth();
+  const { colors } = useAppTheme();
 
   if (isLoading) {
     return (
@@ -26,7 +28,9 @@ export const AppStack = () => {
   }
 
   return (
-    <Stack.Navigator>
+    <Stack.Navigator 
+      screenOptions={{ animation: 'slide_from_right', contentStyle: { backgroundColor: colors.background } }}
+    >
       {user ? (
         <>
           <Stack.Screen

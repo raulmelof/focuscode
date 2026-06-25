@@ -13,6 +13,14 @@ jest.mock('../../../../contexts/ThemeContext', () => ({
   useAppTheme: jest.fn()
 }));
 
+jest.mock('../../../../hooks/usePomodoroCycle', () => ({
+  usePomodoroCycle: jest.fn(() => ({ cycleCount: 1 }))
+}));
+
+jest.mock('../../../../hooks/useSettings', () => ({
+  useSettings: jest.fn(() => ({ settings: { cyclesBeforeLongBreak: 4 } }))
+}));
+
 describe('BreakScreen', () => {
   const mockHandleSkipBreak = jest.fn();
 

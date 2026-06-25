@@ -6,10 +6,18 @@ import { TimerDisplay } from '../../components/TimerDisplay';
 import { styles } from './styles'; 
 import { useBreakViewModel } from './useBreakViewModel';
 import { useAppTheme } from '../../../contexts/ThemeContext';
+import { usePomodoroCycle } from '../../../hooks/usePomodoroCycle';
+import { useSettings } from '../../../hooks/useSettings';
 
 export const BreakScreen = () => {
   const { formattedTime, progress, handleSkipBreak, isLoading } = useBreakViewModel();
   const { theme } = useAppTheme();
+  const { cycleCount } = usePomodoroCycle();
+  const { settings } = useSettings();
+
+  const totalCycles = settings.cyclesBeforeLongBreak || 4;
+  const finishedCycle = cycleCount === 0 ? 1 : ((cycleCount - 1) % totalCycles) + 1;
+  const stageIndex = Math.min(4, Math.floor(((finishedCycle - 1) / totalCycles) * 4) + 1);
 
   // Garante que o loading novo da T21 funcione
   if (isLoading) {
@@ -22,8 +30,8 @@ export const BreakScreen = () => {
 
   // Mapeamento de imagens para os temas da main
   const themeBackgrounds = {
-    cafe: require('../../../assets/themes/cafe/cenario_base.png'),
-    robo: require('../../../assets/themes/robo/Fundo robo full hdo.png'), 
+    cafe: require('../../../assets/themes/cafe/cabana animada.gif'),
+    robo: require('../../../assets/themes/robo/Fundo robo descanso animado.gif'), 
   };
 
   const themeInfo = {
@@ -70,7 +78,7 @@ export const BreakScreen = () => {
         </View>
 
         <View style={styles.timerWrapper}>
-          <PomodoroCircle progress={progress} showImage={false} />
+          <PomodoroCircle progress={progress} showImage={true} roboStage={stageIndex} />
           <View style={styles.timerContainer}>
             <TimerDisplay time={formattedTime} />
           </View>

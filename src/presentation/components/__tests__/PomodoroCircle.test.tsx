@@ -36,9 +36,9 @@ describe('PomodoroCircle', () => {
       colors: { accent: '#00E5FF' },
     });
     
-    const { UNSAFE_getByType } = render(<PomodoroCircle />);
-    const image = UNSAFE_getByType(Image);
-    expect(image).toBeTruthy();
+    const { UNSAFE_getAllByType } = render(<PomodoroCircle />);
+    const images = UNSAFE_getAllByType(Image);
+    expect(images.length).toBeGreaterThanOrEqual(1);
   });
 
   it('nao deve renderizar imagem se showImage for false', () => {

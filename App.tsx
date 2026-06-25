@@ -1,13 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppStack } from './src/presentation/routes/AppStack';
 import { initDB } from './src/data/database/database';
 import './src/services/firebase'; // Inicializa Firebase
 import { AuthProvider } from './src/contexts/AuthContext';
-import { ThemeProvider } from './src/contexts/ThemeContext';
+import { ThemeProvider, useAppTheme } from './src/contexts/ThemeContext';
+
+const ThemedNavigation = ({ children }: { children: React.ReactNode }) => {
+  const { colors } = useAppTheme();
+  const navigationTheme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      background: colors.background,
+    },
+  };
+  return <NavigationContainer theme={navigationTheme}>{children}</NavigationContainer>;
+};
 
 export default function App() {
   const [isDBReady, setIsDBReady] = useState(false);
@@ -36,10 +48,10 @@ export default function App() {
     <SafeAreaProvider>
       <AuthProvider>
         <ThemeProvider>
-          <NavigationContainer>
+          <ThemedNavigation>
             {/* Toda a lógica de Stack.Navigator e Stack.Screen está guardada aqui dentro */}
             <AppStack />
-          </NavigationContainer>
+          </ThemedNavigation>
         </ThemeProvider>
       </AuthProvider>
     </SafeAreaProvider>

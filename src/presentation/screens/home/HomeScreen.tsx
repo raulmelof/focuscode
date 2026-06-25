@@ -62,16 +62,18 @@ export const HomeScreen = () => {
   const { cycleCount } = usePomodoroCycle();
   const { settings } = useSettings();
   
-  const currentCycle = (cycleCount % settings.cyclesBeforeLongBreak) + 1;
-  const totalCycles = settings.cyclesBeforeLongBreak;
+  const totalCycles = settings.cyclesBeforeLongBreak || 4;
+  const activeCycleCount = isFocusSummaryModalVisible ? Math.max(0, cycleCount - 1) : cycleCount;
+  const currentCycle = (activeCycleCount % totalCycles) + 1;
+  const stageIndex = Math.min(4, Math.floor(((currentCycle - 1) / totalCycles) * 4) + 1);
 
   const themeBackgrounds = {
-    cafe: require('../../../assets/themes/cafe/Dentrocabana hd.png'),
-    robo: require('../../../assets/themes/robo/Fundo robo full hdo.png'),
+    cafe: require('../../../assets/themes/cafe/Dentrocabana animado.gif'),
+    robo: require('../../../assets/themes/robo/Fundo robo animado.gif'),
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Image 
         source={themeBackgrounds[theme]} 
         style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]} 
@@ -137,7 +139,7 @@ export const HomeScreen = () => {
           )}
         </TouchableOpacity>
 
-        <PomodoroCircle progress={progress} />
+        <PomodoroCircle progress={progress} isRunning={isRunning} roboStage={stageIndex} />
 
         <View style={styles.timerContainer}>
           <TimerDisplay time={formattedTime} />
