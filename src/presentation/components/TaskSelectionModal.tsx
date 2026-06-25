@@ -15,7 +15,7 @@ interface TaskSelectionModalProps {
   onDeleteTask: (id: number) => void;
 }
 
-export const TaskSelectionModal = ({ 
+export const TaskSelectionModal = React.memo(({ 
   visible, 
   onClose, 
   onSelectTask, 
@@ -137,7 +137,7 @@ export const TaskSelectionModal = ({
       </TouchableOpacity>
     </Modal>
   );
-};
+});
 
 const styles = StyleSheet.create({
   overlay: {
@@ -235,3 +235,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
   }
 });
+
+TaskSelectionModal.displayName = 'TaskSelectionModal';

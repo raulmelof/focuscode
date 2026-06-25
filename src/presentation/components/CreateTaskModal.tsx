@@ -21,7 +21,7 @@ interface CreateTaskModalProps {
   onManageTags: () => void;
 }
 
-export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }: CreateTaskModalProps) => {
+export const CreateTaskModal = React.memo(({ visible, onClose, onSave, tags, onManageTags }: CreateTaskModalProps) => {
   const { settings } = useSettings();
   const [title, setTitle] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<number | undefined>(undefined);
@@ -125,7 +125,7 @@ export const CreateTaskModal = ({ visible, onClose, onSave, tags, onManageTags }
       </KeyboardAvoidingView>
     </Modal>
   );
-};
+});
 
 const styles = StyleSheet.create({
   overlay: {
@@ -243,3 +243,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   }
 });
+
+CreateTaskModal.displayName = 'CreateTaskModal';
