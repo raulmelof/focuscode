@@ -30,7 +30,6 @@ export const AppStack = () => {
   return (
     <Stack.Navigator 
       screenOptions={{ animation: 'slide_from_right', contentStyle: { backgroundColor: colors.background } }}
-      detachInactiveScreens={false}
     >
       {user ? (
         <>
